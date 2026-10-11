@@ -434,7 +434,11 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
             return fail(new FrameUnauthorizedError('pairing prompt was not accepted on the TV'));
           if (event !== 'ms.channel.connect') return fail(new FrameConnectionError(`unexpected event ${event}`));
           const newToken = (msg?.data as Record<string, unknown> | undefined)?.token;
-          if (typeof newToken === 'string' && newToken) saving = this.tokenStore.save(newToken);
+          if (typeof newToken === 'string' && newToken) {
+            saving = this.tokenStore.save(newToken);
+            // done() handles a failed save; until it runs, the rejection must not count as unhandled.
+            saving.catch(() => undefined);
+          }
           if (!waitReady) return done();
           stage = 'ready';
           return;
