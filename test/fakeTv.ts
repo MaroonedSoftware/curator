@@ -19,6 +19,8 @@ export interface FakeTvOptions {
   silentUploads?: boolean;
   /** Delay every art-channel reply (not the handshake) by this much. */
   replyDelayMs?: number;
+  /** Issue this (refreshed) token on the art channel's ms.channel.connect. */
+  artToken?: string;
 }
 
 export class FakeTv {
@@ -104,7 +106,8 @@ export class FakeTv {
     ws.on('close', () => this.artSockets.delete(ws));
     // Real TVs sometimes send noise before the connect event.
     ws.send(JSON.stringify({ event: 'ed.edenTV.update', data: {} }));
-    ws.send(JSON.stringify({ event: 'ms.channel.connect', data: { id: name } }));
+    const token = this.opts.artToken;
+    ws.send(JSON.stringify({ event: 'ms.channel.connect', data: token ? { id: name, token } : { id: name } }));
     ws.send(JSON.stringify({ event: 'ms.channel.ready', data: {} }));
     ws.on('message', (raw) => this.onArtMessage(ws, raw.toString()));
   }

@@ -405,9 +405,15 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
     return new Promise<WebSocket>((resolve, reject) => {
       const ws = new WebSocket(url, { rejectUnauthorized: false, handshakeTimeout: Math.min(timeoutMs, 10000) });
       let stage: 'connect' | 'ready' = 'connect';
+      let settled = false;
+      // The token is saved in the background so later handshake messages are still
+      // handled in order; done() waits for the save before resolving.
+      let saving: Promise<void> = Promise.resolve();
       const timer = setTimeout(() => fail(new FrameTimeoutError(`${endpoint} handshake`, timeoutMs)), timeoutMs);
 
       const fail = (err: Error) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timer);
         ws.removeAllListeners('message');
         ws.terminate();
@@ -416,7 +422,7 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
 
       ws.on('error', (err) => fail(new FrameConnectionError(`cannot reach TV at ${host}:${port}`, { cause: err })));
       ws.on('close', () => fail(new FrameConnectionError(`${endpoint} closed during handshake`)));
-      ws.on('message', async (raw) => {
+      ws.on('message', (raw) => {
         const msg = safeParse(raw.toString());
         const event = typeof msg?.event === 'string' ? msg.event : '*';
         this.log.debug('<- %s', raw.toString());
@@ -428,7 +434,7 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
             return fail(new FrameUnauthorizedError('pairing prompt was not accepted on the TV'));
           if (event !== 'ms.channel.connect') return fail(new FrameConnectionError(`unexpected event ${event}`));
           const newToken = (msg?.data as Record<string, unknown> | undefined)?.token;
-          if (typeof newToken === 'string' && newToken) await this.tokenStore.save(newToken);
+          if (typeof newToken === 'string' && newToken) saving = this.tokenStore.save(newToken);
           if (!waitReady) return done();
           stage = 'ready';
           return;
@@ -438,12 +444,19 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
       });
 
       const done = () => {
-        clearTimeout(timer);
         ws.removeAllListeners('message');
-        ws.removeAllListeners('close');
-        ws.removeAllListeners('error');
-        ws.on('error', (err) => this.log.warn('art channel error: %s', err.message));
-        resolve(ws);
+        saving.then(
+          () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            ws.removeAllListeners('close');
+            ws.removeAllListeners('error');
+            ws.on('error', (err) => this.log.warn('art channel error: %s', err.message));
+            resolve(ws);
+          },
+          (err) => fail(new FrameError('could not save the pairing token', { cause: err })),
+        );
       };
     });
   }

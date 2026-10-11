@@ -6,6 +6,7 @@ import {
   MemoryTokenStore,
   SamsungFrameClient,
   type SamsungFrameClientOptions,
+  type TokenStore,
 } from '../src/frame/index.js';
 import { pyJson } from '../src/frame/pyjson.js';
 import { FakeTv, type FakeTvOptions } from './fakeTv.js';
@@ -165,6 +166,31 @@ describe('edge cases', () => {
     await setup({ silentUploads: true }, { uploadTimeoutMs: 100 });
     const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(1000, 7)]);
     await expect(client.upload(jpeg)).rejects.toMatchObject({ name: 'FrameTimeoutError', request: 'send_image' });
+  });
+
+  it('handles the handshake in order while a refreshed token is being saved', async () => {
+    let saved: string | undefined;
+    const slowStore: TokenStore = {
+      load: async () => saved ?? '12345678',
+      save: async (token) => {
+        await new Promise((r) => setTimeout(r, 50));
+        saved = token;
+      },
+    };
+    await setup({ artToken: 'refreshed' }, { tokenStore: slowStore });
+    expect((await client.current()).content_id).toBe('SAM-S0001');
+    expect(saved).toBe('refreshed');
+  });
+
+  it('fails the handshake when the token cannot be saved', async () => {
+    const brokenStore: TokenStore = {
+      load: async () => '12345678',
+      save: async () => {
+        throw new Error('disk full');
+      },
+    };
+    await setup({ artToken: 'refreshed' }, { tokenStore: brokenStore });
+    await expect(client.current()).rejects.toMatchObject({ message: 'could not save the pairing token' });
   });
 
   it('refuses images it cannot identify', async () => {
