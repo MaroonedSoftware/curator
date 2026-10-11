@@ -2,8 +2,8 @@
  * TS twin of frame_probe.py: same checks, same order, so if one passes and the
  * other fails you know the bug is in the port, not the TV.
  *
- *   npm run probe -- 192.168.1.50            # read-only
- *   npm run probe -- 192.168.1.50 --upload   # upload, show, restore, delete a test image
+ *   pnpm probe 192.168.1.50            # read-only
+ *   pnpm probe 192.168.1.50 --upload   # upload, show, restore, delete a test image
  *   add --debug to print every frame on the wire
  */
 import { fileURLToPath } from 'node:url';
@@ -14,7 +14,7 @@ import { Category, FileTokenStore, SamsungFrameClient } from '../src/index.js';
 const args = process.argv.slice(2);
 const host = args.find(a => !a.startsWith('--'));
 if (!host) {
-    console.error('usage: npm run probe -- <tv-ip> [--upload] [--debug]');
+    console.error('usage: pnpm probe <tv-ip> [--upload] [--debug]');
     process.exit(2);
 }
 const debug = args.includes('--debug');

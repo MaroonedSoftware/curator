@@ -1,5 +1,5 @@
 // Starts the fake TV on a fixed port so you can point the probe at it:
-//   npx tsx scripts/fake.tv.serve.ts &   then   npm run probe -- 127.0.0.1 --port=18002 --insecure --upload
+//   pnpm fake:tv &   then   pnpm probe 127.0.0.1 --port=18002 --insecure --upload
 import http from 'node:http';
 import { FakeTv } from '../tests/fake.tv.js';
 const listen = http.Server.prototype.listen;

@@ -1,0 +1,4 @@
+# Formatting-only commits, skipped by `git blame` (git config blame.ignoreRevsFile .git-blame-ignore-revs).
+
+# Format with shared prettier config (4-space, width 150)
+b4903357ef935e20704f9ef4997a87b71be9fe2c
