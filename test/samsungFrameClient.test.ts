@@ -145,6 +145,18 @@ describe('edge cases', () => {
     await expect(client.current()).rejects.toBeInstanceOf(FrameUnauthorizedError);
   });
 
+  it('does not count a slow transfer against the upload timeout', async () => {
+    await setup({ uploadDelayMs: 300 }, { uploadTimeoutMs: 100 });
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(1000, 7)]);
+    await expect(client.upload(jpeg)).resolves.toBe('MY-F0002');
+  });
+
+  it('times out an upload the TV never acknowledges', async () => {
+    await setup({ silentUploads: true }, { uploadTimeoutMs: 100 });
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(1000, 7)]);
+    await expect(client.upload(jpeg)).rejects.toMatchObject({ name: 'FrameTimeoutError', request: 'send_image' });
+  });
+
   it('refuses images it cannot identify', async () => {
     await setup();
     await expect(client.upload(Buffer.from('GIF89a'))).rejects.toThrow(/neither JPEG nor PNG/);

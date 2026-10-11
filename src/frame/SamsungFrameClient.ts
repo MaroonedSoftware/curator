@@ -161,7 +161,9 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
       const id = randomUUID();
 
       // Register for image_added before any bytes move, so a fast TV can't beat us to it.
-      const added = this.waitFor('image_added', this.opts.uploadTimeoutMs, 'send_image');
+      // The timeout starts once the bytes are sent: a big image on slow Wi-Fi can take
+      // longer to transfer than the TV takes to acknowledge it.
+      const added = this.waitFor('image_added', undefined, 'send_image');
 
       let reply: Record<string, unknown>;
       try {
@@ -202,6 +204,7 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
         throw new FrameConnectionError(`upload socket to ${conn.ip}:${conn.port} failed`, { cause: err });
       }
 
+      added.arm(this.opts.uploadTimeoutMs);
       const done = await added.promise;
       const contentId = done.content_id;
       if (typeof contentId !== 'string') throw new FrameError(`image_added had no content_id: ${pyJson(done)}`);
@@ -317,30 +320,49 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
     }
   }
 
-  private waitFor(key: string, timeoutMs: number, requestName: string) {
+  /**
+   * Registers a waiter for a reply. With no timeoutMs the clock doesn't start
+   * until arm() is called, so a caller can register early and time only the wait.
+   */
+  private waitFor(key: string, timeoutMs: number | undefined, requestName: string) {
     let timer: NodeJS.Timeout | undefined;
+    let settled = false;
+    let waiter!: Waiter;
     const promise = new Promise<Record<string, unknown>>((resolve, reject) => {
-      timer = setTimeout(() => {
-        this.waiters.delete(key);
-        reject(new FrameTimeoutError(requestName, timeoutMs));
-      }, timeoutMs);
-      this.waiters.set(key, {
+      waiter = {
         resolve: (d) => {
+          settled = true;
           clearTimeout(timer);
           resolve(d);
         },
         reject: (e) => {
+          settled = true;
           clearTimeout(timer);
           reject(e);
         },
-      });
+      };
+      this.waiters.set(key, waiter);
     });
+    // The caller may not await this until later (upload does other work first);
+    // a rejection in the meantime must not surface as an unhandled rejection.
+    promise.catch(() => undefined);
+
+    const arm = (ms: number) => {
+      if (settled) return;
+      timer = setTimeout(() => {
+        if (this.waiters.get(key) === waiter) this.waiters.delete(key);
+        waiter.reject(new FrameTimeoutError(requestName, ms));
+      }, ms);
+    };
+    if (timeoutMs !== undefined) arm(timeoutMs);
+
     return {
       promise,
+      arm,
       cancel: () => {
+        settled = true;
         clearTimeout(timer);
-        this.waiters.delete(key);
-        promise.catch(() => undefined);
+        if (this.waiters.get(key) === waiter) this.waiters.delete(key);
       },
     };
   }

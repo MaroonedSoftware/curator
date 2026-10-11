@@ -13,6 +13,10 @@ export interface FakeTvOptions {
   silentRequests?: string[];
   /** Pretend the human never accepts the pairing prompt. */
   rejectPairing?: boolean;
+  /** Hold the upload socket this long before reading it (a slow transfer). */
+  uploadDelayMs?: number;
+  /** Take the upload bytes but never announce image_added. */
+  silentUploads?: boolean;
 }
 
 export class FakeTv {
@@ -149,6 +153,10 @@ export class FakeTv {
 
   private onUploadSocket(socket: net.Socket) {
     const chunks: Buffer[] = [];
+    if (this.opts.uploadDelayMs) {
+      socket.pause();
+      setTimeout(() => socket.resume(), this.opts.uploadDelayMs);
+    }
     socket.on('data', (c) => chunks.push(Buffer.from(c)));
     socket.on('end', () => {
       const buf = Buffer.concat(chunks);
@@ -158,6 +166,7 @@ export class FakeTv {
       this.uploads.push({ header, bytes });
       const pending = this.pendingUpload;
       if (!pending || header.secKey !== pending.key || bytes.length !== pending.size) return;
+      if (this.opts.silentUploads) return;
       const contentId = `MY-F${String(this.nextId++).padStart(4, '0')}`;
       this.art.set(contentId, { content_id: contentId, category_id: 'MY-C0002' });
       for (const ws of this.artSockets)
