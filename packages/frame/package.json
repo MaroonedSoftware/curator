@@ -7,18 +7,22 @@
     "license": "MIT",
     "scripts": {
         "probe": "tsx scripts/probe.ts",
-        "typecheck": "tsc --noEmit",
+        "typecheck": "tsc -p tsconfig.tests.json --noEmit",
+        "lint": "eslint --fix",
         "test": "vitest run"
     },
     "dependencies": {
         "ws": "^8.22.0"
     },
     "devDependencies": {
+        "@repo/config-eslint": "workspace:*",
+        "@repo/config-typescript": "workspace:*",
         "@types/node": "^26.6.5",
         "@types/ws": "^8.18.2",
         "sharp": "^0.35.5",
         "tsx": "^4.23.15",
         "typescript": "6.0.3",
-        "vitest": "^5.0.3"
+        "vitest": "^5.0.3",
+        "eslint": "^10.12.0"
     }
 }
