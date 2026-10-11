@@ -146,6 +146,21 @@ describe('edge cases', () => {
     await expect(client.current()).rejects.toBeInstanceOf(FrameUnauthorizedError);
   });
 
+  it('reconnects after a required request times out on a dead socket', async () => {
+    await setup();
+    await client.current();
+    tv.freezeConnections();
+    await expect(client.current()).rejects.toMatchObject({ name: 'FrameTimeoutError' });
+    expect((await client.current()).content_id).toBe('SAM-S0001');
+  });
+
+  it('keeps the channel when an optional request gets no reply', async () => {
+    await setup({ silentRequests: ['select_image'] });
+    await client.select('MY-F0001');
+    await client.current();
+    expect(tv.artConnections).toBe(1);
+  });
+
   it('keeps requests on a new channel alive when the old one finishes closing', async () => {
     await setup({ replyDelayMs: 100 });
     await client.current();

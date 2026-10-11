@@ -310,9 +310,15 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
       const data = await waiter.promise;
       return data;
     } catch (err) {
-      if (optional && err instanceof FrameTimeoutError) {
-        this.log.debug('%s: no reply (ok for this request)', name);
-        return undefined;
+      if (err instanceof FrameTimeoutError) {
+        if (optional) {
+          this.log.debug('%s: no reply (ok for this request)', name);
+          return undefined;
+        }
+        // A socket that died without closing (TV asleep, Wi-Fi gone) still looks
+        // open, and a missing reply is the only sign. Drop it so the next call
+        // reconnects instead of timing out on the same dead socket forever.
+        this.dropChannel(ws, `${name} got no reply`);
       }
       throw err;
     } finally {
@@ -500,6 +506,13 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
     } else {
       waiter.resolve(data);
     }
+  }
+
+  private dropChannel(ws: WebSocket, reason: string) {
+    if (this.ws !== ws) return;
+    this.log.warn('dropping art channel: %s', reason);
+    this.ws = undefined;
+    ws.terminate();
   }
 
   private failWaiters(err: Error) {

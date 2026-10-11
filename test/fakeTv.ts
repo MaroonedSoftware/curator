@@ -33,11 +33,13 @@ export class FakeTv {
   current = 'SAM-S0001';
   artMode = 'on';
   pairedClients = 0;
+  artConnections = 0;
 
   private server!: http.Server;
   private wss!: WebSocketServer;
   private uploadServer!: net.Server;
   private artSockets = new Set<WebSocket>();
+  private frozenSockets = new Set<WebSocket>();
   private nextId = 2;
   private pendingUpload: { key: string; size: number; requestId: string } | undefined;
 
@@ -77,6 +79,11 @@ export class FakeTv {
     for (const ws of this.artSockets) ws.terminate();
   }
 
+  /** Simulates a socket that died without closing: open, but nothing gets an answer. */
+  freezeConnections() {
+    for (const ws of this.artSockets) this.frozenSockets.add(ws);
+  }
+
   /**
    * Starts a close but holds the TCP connection open for `ms`, so the client
    * sits in CLOSING (as when the TV is slow to finish the close handshake).
@@ -102,6 +109,7 @@ export class FakeTv {
     }
     if (!url.pathname.endsWith('/com.samsung.art-app')) return ws.close();
 
+    this.artConnections++;
     this.artSockets.add(ws);
     ws.on('close', () => this.artSockets.delete(ws));
     // Real TVs sometimes send noise before the connect event.
@@ -125,6 +133,7 @@ export class FakeTv {
   }
 
   private onArtMessage(ws: WebSocket, raw: string) {
+    if (this.frozenSockets.has(ws)) return;
     const msg = JSON.parse(raw);
     if (msg.method !== 'ms.channel.emit' || msg.params?.event !== 'art_app_request') return;
     const req = JSON.parse(msg.params.data);
