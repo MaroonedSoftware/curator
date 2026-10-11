@@ -9,7 +9,7 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
-import { Category, FileTokenStore, SamsungFrameClient } from '../src/frame/index.js';
+import { Category, FileTokenStore, SamsungFrameClient } from '../src/index.js';
 
 const args = process.argv.slice(2);
 const host = args.find((a) => !a.startsWith('--'));

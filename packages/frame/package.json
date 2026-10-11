@@ -1,0 +1,24 @@
+{
+    "name": "@curator/frame",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "description": "Client for the Samsung The Frame art-mode protocol",
+    "license": "MIT",
+    "scripts": {
+        "probe": "tsx scripts/probe.ts",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "ws": "^8.22.0"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.5",
+        "@types/ws": "^8.18.2",
+        "sharp": "^0.35.5",
+        "tsx": "^4.23.15",
+        "typescript": "6.0.3",
+        "vitest": "^5.0.3"
+    }
+}

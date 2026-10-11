@@ -7,8 +7,8 @@ import {
   SamsungFrameClient,
   type SamsungFrameClientOptions,
   type TokenStore,
-} from '../src/frame/index.js';
-import { pyJson } from '../src/frame/pyjson.js';
+} from '../src/index.js';
+import { pyJson } from '../src/pyjson.js';
 import { FakeTv, type FakeTvOptions } from './fakeTv.js';
 
 let tv: FakeTv;

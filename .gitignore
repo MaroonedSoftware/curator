@@ -1,3 +1,27 @@
-node_modules/
-dist/
+# Dependencies
+node_modules
+.pnpm-store/
+
+# Env and secrets
+.env
+.env.local
+
+# Probe state (pairing token)
 .data/
+
+# Build and tool output
+dist/
+build/
+coverage/
+.turbo
+*.log
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+
+# Claude local state
+.claude/*
+!.claude/settings.json
+CLAUDE.local.md

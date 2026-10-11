@@ -1,0 +1,9 @@
+packages:
+    - packages/*
+
+allowBuilds:
+    '@swc/core': true
+    esbuild: true
+    sharp: true
+
+confirmModulesPurge: false

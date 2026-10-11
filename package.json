@@ -1,23 +1,26 @@
 {
-  "name": "frame-rotator",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Art rotation for Samsung The Frame",
-  "scripts": {
-    "probe": "tsx scripts/probe.ts",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
-  },
-  "dependencies": {
-    "sharp": "^0.35.5",
-    "ws": "^8.22.0"
-  },
-  "devDependencies": {
-    "@types/node": "^26.6.5",
-    "@types/ws": "^8.18.2",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2",
-    "vitest": "^5.0.3"
-  }
+    "name": "curator",
+    "private": true,
+    "license": "MIT",
+    "scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "lint": "turbo run lint",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "test": "turbo run test",
+        "typecheck": "turbo run typecheck"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.5",
+        "eslint": "^10.12.0",
+        "prettier": "^3.9.9",
+        "turbo": "^2.11.7",
+        "typescript": "6.0.3",
+        "vitest": "^5.0.3"
+    },
+    "packageManager": "pnpm@11.10.0",
+    "engines": {
+        "node": ">=26"
+    }
 }
