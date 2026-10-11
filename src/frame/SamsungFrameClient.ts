@@ -376,7 +376,10 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
         const ws = await this.openChannel(ART_ENDPOINT, token, this.opts.connectTimeoutMs, true);
         ws.on('message', (raw) => this.onMessage(raw.toString()));
         ws.on('close', () => {
-          if (this.ws === ws) this.ws = undefined;
+          // A socket that was already replaced (it lingered in CLOSING while a new
+          // one opened) must not fail requests waiting on its successor.
+          if (this.ws !== ws) return;
+          this.ws = undefined;
           this.failWaiters(new FrameConnectionError('art channel closed'));
         });
         this.ws = ws;

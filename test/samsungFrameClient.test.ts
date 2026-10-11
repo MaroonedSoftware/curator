@@ -145,6 +145,16 @@ describe('edge cases', () => {
     await expect(client.current()).rejects.toBeInstanceOf(FrameUnauthorizedError);
   });
 
+  it('keeps requests on a new channel alive when the old one finishes closing', async () => {
+    await setup({ replyDelayMs: 100 });
+    await client.current();
+    tv.closeSlowly(50);
+    await new Promise((r) => setTimeout(r, 10));
+    // The old socket is CLOSING, so this opens a new channel; the old socket's
+    // close lands while this request is still waiting for its reply.
+    expect((await client.current()).content_id).toBe('SAM-S0001');
+  });
+
   it('does not count a slow transfer against the upload timeout', async () => {
     await setup({ uploadDelayMs: 300 }, { uploadTimeoutMs: 100 });
     const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(1000, 7)]);

@@ -17,6 +17,8 @@ export interface FakeTvOptions {
   uploadDelayMs?: number;
   /** Take the upload bytes but never announce image_added. */
   silentUploads?: boolean;
+  /** Delay every art-channel reply (not the handshake) by this much. */
+  replyDelayMs?: number;
 }
 
 export class FakeTv {
@@ -73,6 +75,18 @@ export class FakeTv {
     for (const ws of this.artSockets) ws.terminate();
   }
 
+  /**
+   * Starts a close but holds the TCP connection open for `ms`, so the client
+   * sits in CLOSING (as when the TV is slow to finish the close handshake).
+   */
+  closeSlowly(ms: number) {
+    for (const ws of this.artSockets) {
+      ws.close();
+      ws.pause();
+      setTimeout(() => ws.terminate(), ms);
+    }
+  }
+
   private onConnection(ws: WebSocket, url: URL) {
     const name = Buffer.from(url.searchParams.get('name') ?? '', 'base64').toString();
     if (url.pathname.endsWith('/samsung.remote.control')) {
@@ -96,6 +110,14 @@ export class FakeTv {
   }
 
   private reply(ws: WebSocket, data: Record<string, unknown>) {
+    if (this.opts.replyDelayMs) {
+      setTimeout(() => this.sendReply(ws, data), this.opts.replyDelayMs);
+    } else {
+      this.sendReply(ws, data);
+    }
+  }
+
+  private sendReply(ws: WebSocket, data: Record<string, unknown>) {
     ws.send(JSON.stringify({ event: 'd2d_service_message', from: 'host', data: JSON.stringify(data) }));
   }
 
