@@ -23,7 +23,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const portArg = args.find((a) => a.startsWith('--port='));
 const tv = new SamsungFrameClient({
   host,
-  // --port / --insecure exist for pointing the probe at the fake TV in test/.
+  // --port / --insecure exist for pointing the probe at the fake TV in tests/.
   port: portArg ? Number(portArg.split('=')[1]) : 8002,
   secure: !args.includes('--insecure'),
   uploadTimeoutMs: 30_000,

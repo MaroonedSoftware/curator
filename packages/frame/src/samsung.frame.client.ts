@@ -26,9 +26,9 @@ import tls from 'node:tls';
 import WebSocket from 'ws';
 
 import { pyJson } from './pyjson.js';
-import type { TokenStore } from './tokenStore.js';
-import { MemoryTokenStore } from './tokenStore.js';
-import type { ArtItem, DeviceInfo, FrameClient, UploadOptions } from './FrameClient.js';
+import type { TokenStore } from './token.store.js';
+import { MemoryTokenStore } from './token.store.js';
+import type { ArtItem, DeviceInfo, FrameClient, UploadOptions } from './frame.client.js';
 import {
   FrameConnectionError,
   FrameError,

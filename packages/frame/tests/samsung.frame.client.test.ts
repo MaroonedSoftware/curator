@@ -9,7 +9,7 @@ import {
   type TokenStore,
 } from '../src/index.js';
 import { pyJson } from '../src/pyjson.js';
-import { FakeTv, type FakeTvOptions } from './fakeTv.js';
+import { FakeTv, type FakeTvOptions } from './fake.tv.js';
 
 let tv: FakeTv;
 let client: SamsungFrameClient;
