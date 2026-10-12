@@ -18,7 +18,7 @@ const ArtItem = z.object({ contentId: z.string(), categoryId: z.string(), catego
 const CurrentArt = z.object({ contentId: z.string().optional(), categoryId: z.string().optional(), raw: Raw });
 
 /** A TV content id: MY-Fxxxx or MY_Fxxxx for uploads, SAM-Sxxxx for the Art Store. */
-const ContentId = z.string().regex(/^[A-Za-z0-9_-]+$/, 'not a content id');
+export const ContentId = z.string().regex(/^[A-Za-z0-9_-]+$/, 'not a content id');
 
 const ContentIdParams = z.object({ contentId: ContentId });
 

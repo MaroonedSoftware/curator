@@ -33,7 +33,7 @@ export const toTv = (row: TvRow): Tv => ({
     updatedAt: row.updatedAt.toISO() ?? '',
 });
 
-const TvIdParams = z.object({ tvId: z.uuid() });
+export const TvIdParams = z.object({ tvId: z.uuid() });
 
 /** A TV's name: trimmed, not blank, short enough to fit a menu. */
 const TvName = z.string().trim().min(1).max(60);
