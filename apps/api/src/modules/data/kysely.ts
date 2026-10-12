@@ -10,6 +10,21 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export interface AlbumPieces {
+  addedAt: Generated<DateTime>;
+  albumId: string;
+  contentId: string;
+  position: number;
+}
+
+export interface Albums {
+  createdAt: Generated<DateTime>;
+  id: Generated<string>;
+  name: string;
+  tvId: string;
+  updatedAt: Generated<DateTime>;
+}
+
 export interface Tvs {
   createdAt: Generated<DateTime>;
   host: string;
@@ -22,5 +37,7 @@ export interface Tvs {
 }
 
 export interface DB {
+  albumPieces: AlbumPieces;
+  albums: Albums;
   tvs: Tvs;
 }

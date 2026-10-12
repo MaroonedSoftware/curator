@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Thumbnail } from '@curator/frame';
+import { normalizeContentId } from './content.id.js';
 
 /** An original as it was uploaded: the same shape the TV uses for thumbnails. */
 export type Original = Thumbnail;
@@ -17,15 +18,14 @@ export interface TvOriginals {
 
 /**
  * Uploaded images kept on disk as `<rootDir>/<tvId>/<contentId>.<jpg|png>`, since the TV offers no
- * way to fetch a full image back. Newer firmware reports MY_F0019 where older reports MY-F0019, and
- * an upload's id may not match how the library later lists it, so `_` is stored as `-`.
+ * way to fetch a full image back. Files are named by {@link normalizeContentId}.
  */
 export class OriginalStore {
     constructor(private readonly rootDir: string) {}
 
     forTv(tvId: string): TvOriginals {
         const dir = join(this.rootDir, tvId);
-        const pathOf = (contentId: string, fileType: string) => join(dir, `${contentId.replaceAll('_', '-')}.${fileType}`);
+        const pathOf = (contentId: string, fileType: string) => join(dir, `${normalizeContentId(contentId)}.${fileType}`);
 
         return {
             async save(contentId, fileType, data) {
