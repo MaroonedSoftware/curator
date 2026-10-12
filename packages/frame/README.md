@@ -48,4 +48,7 @@ The protocol is ported from [NickWaterton/samsung-tv-ws-api](https://github.com/
 - **Lazy connect, auto reconnect.** The art channel opens on first use and reopens after the TV drops it.
 - **Fire-and-forget commands.** `select`, `delete`, `changeMatte` and `setArtMode` don't fail if the TV never
   replies (the reference treats them the same way). Reads and uploads do.
+- **Thumbnails** come in one request for many ids (`thumbnails(ids)`, the reference's `get_thumbnail_list`):
+  the TV answers with a socket, then streams each image behind a length-prefixed JSON header. Ids it
+  has no thumbnail for are absent from the result.
 - **TV pushes** arrive on `client.on('event', ({ event, data }) => ...)`; `client.artMode` tracks the last known state.

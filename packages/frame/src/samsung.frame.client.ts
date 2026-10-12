@@ -28,7 +28,7 @@ import WebSocket from 'ws';
 import { pyJson } from './pyjson.js';
 import type { TokenStore } from './token.store.js';
 import { MemoryTokenStore } from './token.store.js';
-import type { ArtItem, DeviceInfo, FrameClient, UploadOptions } from './frame.client.js';
+import type { ArtItem, DeviceInfo, FrameClient, Thumbnail, UploadOptions } from './frame.client.js';
 import { FrameConnectionError, FrameError, FrameRequestError, FrameTimeoutError, FrameUnauthorizedError } from './errors.js';
 import { decodeHtmlEntities } from './html.entities.js';
 
@@ -198,6 +198,31 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
             if (typeof contentId !== 'string') throw new FrameError(`image_added had no content_id: ${pyJson(done)}`);
             this.log.info('uploaded %s', contentId);
             return contentId;
+        });
+    }
+
+    thumbnails(contentIds: string[]): Promise<Map<string, Thumbnail>> {
+        if (contentIds.length === 0) {
+            return Promise.resolve(new Map());
+        }
+        return this.exclusive(async () => {
+            const id = randomUUID();
+            const reply = (await this.request(
+                {
+                    request: 'get_thumbnail_list',
+                    content_id_list: contentIds.map(content_id => ({ content_id })),
+                    conn_info: { d2d_mode: 'socket', connection_id: randomInt(2 ** 32), id },
+                },
+                { timeoutMs: this.opts.listTimeoutMs },
+            ))!;
+            const conn = parseJsonField<{ ip: string; port: string | number; secured?: boolean }>(reply, 'conn_info');
+            try {
+                return await receiveThumbnails(conn.ip, Number(conn.port), Boolean(conn.secured), this.opts.uploadTimeoutMs);
+            } catch (err) {
+                throw err instanceof FrameError
+                    ? err
+                    : new FrameConnectionError(`thumbnail socket to ${conn.ip}:${conn.port} failed`, { cause: err });
+            }
         });
     }
 
@@ -540,6 +565,52 @@ function sendOverSocket(host: string, port: number, secured: boolean, header: st
             socket.end(body);
         });
         socket.once('close', hadError => (hadError ? undefined : resolve()));
+    });
+}
+
+/**
+ * Reads the thumbnails the TV streams after `get_thumbnail_list`: per image, a 4-byte big-endian
+ * header length, a JSON header (`fileID`, `fileType`, `fileLength`, `num`, `total`), then
+ * `fileLength` bytes. Ends after the image numbered `total - 1`, as the reference does.
+ */
+function receiveThumbnails(host: string, port: number, secured: boolean, timeoutMs: number) {
+    return new Promise<Map<string, Thumbnail>>((resolve, reject) => {
+        const socket: net.Socket = secured ? tls.connect({ host, port, rejectUnauthorized: false }) : net.connect({ host, port });
+        const thumbnails = new Map<string, Thumbnail>();
+        let buffered = Buffer.alloc(0);
+        let done = false;
+
+        const finish = (error?: Error) => {
+            if (done) return;
+            done = true;
+            socket.destroy();
+            if (error) reject(error);
+            else resolve(thumbnails);
+        };
+
+        socket.setTimeout(timeoutMs, () => finish(new FrameTimeoutError('get_thumbnail_list transfer', timeoutMs)));
+        socket.once('error', error => finish(error));
+        socket.on('data', (chunk: Buffer) => {
+            buffered = Buffer.concat([buffered, chunk]);
+            // Take every complete thumbnail now in the buffer.
+            for (;;) {
+                if (buffered.length < 4) return;
+                const headerLength = buffered.readUInt32BE(0);
+                if (buffered.length < 4 + headerLength) return;
+                const header = safeParse(buffered.subarray(4, 4 + headerLength).toString('utf8'));
+                if (!header) return finish(new FrameError('thumbnail header is not JSON'));
+                const fileLength = Number(header.fileLength);
+                const start = 4 + headerLength;
+                if (buffered.length < start + fileLength) return;
+                thumbnails.set(String(header.fileID), {
+                    data: Buffer.from(buffered.subarray(start, start + fileLength)),
+                    fileType: String(header.fileType),
+                });
+                buffered = buffered.subarray(start + fileLength);
+                if (Number(header.num) + 1 >= Number(header.total)) return finish();
+            }
+        });
+        socket.once('end', () => finish(thumbnails.size > 0 ? undefined : new FrameError('the TV closed the thumbnail socket before sending one')));
     });
 }
 

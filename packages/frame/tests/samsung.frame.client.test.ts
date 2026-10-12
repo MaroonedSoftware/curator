@@ -9,7 +9,7 @@ import {
     type TokenStore,
 } from '../src/index.js';
 import { pyJson } from '../src/pyjson.js';
-import { FakeTv, type FakeTvOptions } from './fake.tv.js';
+import { FakeTv, fakeThumbnail, type FakeTvOptions } from './fake.tv.js';
 
 let tv: FakeTv;
 let client: SamsungFrameClient;
@@ -52,6 +52,22 @@ describe('SamsungFrameClient against a fake TV', () => {
         await setup({ deviceName: '50&quot; The Frame &amp; more' });
 
         expect((await client.deviceInfo()).name).toBe('50" The Frame & more');
+    });
+
+    it('fetches thumbnails for several pieces in one request, leaving out ids the TV lacks', async () => {
+        const thumbnails = await client.thumbnails(['SAM-S0001', 'MY-F0001', 'MY-F9999']);
+
+        expect([...thumbnails.keys()]).toEqual(['SAM-S0001', 'MY-F0001']);
+        expect(thumbnails.get('MY-F0001')).toEqual({ data: fakeThumbnail('MY-F0001'), fileType: 'jpg' });
+        const requests = tv.received.filter(req => req.request === 'get_thumbnail_list');
+        expect(requests).toHaveLength(1);
+        expect(requests[0]?.content_id_list).toEqual([{ content_id: 'SAM-S0001' }, { content_id: 'MY-F0001' }, { content_id: 'MY-F9999' }]);
+        expect(requests[0]?.conn_info).toMatchObject({ d2d_mode: 'socket' });
+    });
+
+    it('asks the TV nothing for no thumbnails', async () => {
+        await expect(client.thumbnails([])).resolves.toEqual(new Map());
+        expect(tv.received.filter(req => req.request === 'get_thumbnail_list')).toEqual([]);
     });
 
     it('pairs once and stores the token', async () => {

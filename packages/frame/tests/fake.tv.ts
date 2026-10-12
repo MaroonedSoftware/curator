@@ -25,6 +25,9 @@ export interface FakeTvOptions {
     deviceName?: string;
 }
 
+/** What the fake sends as a content id's thumbnail: recognisable bytes, not a real image. */
+export const fakeThumbnail = (contentId: string) => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.from(`thumb:${contentId}`)]);
+
 export class FakeTv {
     readonly received: Record<string, any>[] = [];
     readonly uploads: { header: Record<string, any>; bytes: Buffer }[] = [];
@@ -40,6 +43,9 @@ export class FakeTv {
     private server!: http.Server;
     private wss!: WebSocketServer;
     private uploadServer!: net.Server;
+    private thumbnailServer!: net.Server;
+    /** Content ids the next thumbnail connection sends, in order. */
+    private pendingThumbnails: string[] = [];
     private artSockets = new Set<WebSocket>();
     private frozenSockets = new Set<WebSocket>();
     private nextId = 2;
@@ -70,6 +76,8 @@ export class FakeTv {
         this.uploadServer = net.createServer(s => this.onUploadSocket(s));
         await new Promise<void>(r => this.server.listen(0, '127.0.0.1', r));
         await new Promise<void>(r => this.uploadServer.listen(0, '127.0.0.1', r));
+        this.thumbnailServer = net.createServer(s => this.onThumbnailSocket(s));
+        await new Promise<void>(r => this.thumbnailServer.listen(0, '127.0.0.1', r));
         return this;
     }
 
@@ -78,6 +86,7 @@ export class FakeTv {
         await new Promise(r => this.wss.close(r));
         await new Promise(r => this.server.close(r));
         await new Promise(r => this.uploadServer.close(r));
+        await new Promise(r => this.thumbnailServer.close(r));
     }
 
     /** Simulates the TV dropping the art channel (sleep, Wi-Fi blip). */
@@ -171,6 +180,19 @@ export class FakeTv {
             case 'delete_image_list':
                 for (const { content_id } of req.content_id_list) this.art.delete(content_id);
                 return this.reply(ws, { event: 'image_deleted', request_id: rid, id: rid });
+            case 'get_thumbnail_list': {
+                // Only art the TV holds has a thumbnail; the rest are left out, as a real TV does.
+                this.pendingThumbnails = (req.content_id_list as { content_id: string }[])
+                    .map(item => item.content_id)
+                    .filter(id => this.art.has(id));
+                const { port } = this.thumbnailServer.address() as AddressInfo;
+                return this.reply(ws, {
+                    event: 'get_thumbnail_list',
+                    request_id: rid,
+                    id: rid,
+                    conn_info: JSON.stringify({ ip: '127.0.0.1', port: String(port), secured: false }),
+                });
+            }
             case 'send_image': {
                 const key = `key-${rid.slice(0, 8)}`;
                 this.pendingUpload = { key, size: req.file_size, requestId: rid };
@@ -189,6 +211,23 @@ export class FakeTv {
 
     private error(ws: WebSocket, req: Record<string, unknown>, code: string) {
         this.reply(ws, { event: 'error', error_code: code, request_id: req.request_id, id: req.id, request_data: JSON.stringify(req) });
+    }
+
+    /** Streams each pending thumbnail as a length-prefixed JSON header and its bytes, in small writes. */
+    private onThumbnailSocket(socket: net.Socket) {
+        const ids = this.pendingThumbnails;
+        this.pendingThumbnails = [];
+        const frames = ids.map((id, num) => {
+            const data = fakeThumbnail(id);
+            const header = Buffer.from(JSON.stringify({ fileID: id, fileType: 'jpg', fileLength: data.length, num, total: ids.length }));
+            const length = Buffer.alloc(4);
+            length.writeUInt32BE(header.length);
+            return Buffer.concat([length, header, data]);
+        });
+        const all = Buffer.concat(frames);
+        // Split the stream across writes so a reader that assumes one frame per chunk fails.
+        for (let at = 0; at < all.length; at += 7) socket.write(all.subarray(at, at + 7));
+        socket.end();
     }
 
     private onUploadSocket(socket: net.Socket) {

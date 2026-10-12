@@ -26,6 +26,13 @@ export interface UploadOptions {
     portraitMatte?: string;
 }
 
+/** A thumbnail the TV sent, as it sent it: usually a small JPEG. */
+export interface Thumbnail {
+    data: Buffer;
+    /** The TV's own label for it: `jpg` or `png`. */
+    fileType: string;
+}
+
 /** TV-side categories. MY-C0002 is "My Photos" (uploads), MY-C0004 favourites, MY-C0008 store. */
 export const Category = {
     MyPhotos: 'MY-C0002',
@@ -43,6 +50,8 @@ export interface FrameClient {
 
     /** Returns the TV-assigned content id (MY-Fxxxx). */
     upload(image: Buffer, opts?: UploadOptions): Promise<string>;
+    /** Thumbnails by content id, fetched in one request. An id the TV has no thumbnail for is absent. */
+    thumbnails(contentIds: string[]): Promise<Map<string, Thumbnail>>;
     select(contentId: string, opts?: { show?: boolean; category?: string }): Promise<void>;
     delete(contentIds: string | string[]): Promise<void>;
     changeMatte(contentId: string, matte: string, portraitMatte?: string): Promise<void>;

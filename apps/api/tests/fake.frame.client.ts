@@ -1,4 +1,4 @@
-import type { ArtItem, DeviceInfo, FrameClient, TokenStore, UploadOptions } from '@curator/frame';
+import type { ArtItem, DeviceInfo, FrameClient, Thumbnail, TokenStore, UploadOptions } from '@curator/frame';
 
 /** An in-memory {@link FrameClient}: the TV's state as plain fields, and every call recorded. */
 export class FakeFrameClient implements FrameClient {
@@ -60,6 +60,12 @@ export class FakeFrameClient implements FrameClient {
             raw: { content_id: contentId, category_id: 'MY-C0002', matte_id: opts?.matte ?? 'none' },
         });
         return contentId;
+    }
+
+    /** Every art piece has a thumbnail: recognisable bytes, not a real image. */
+    async thumbnails(contentIds: string[]): Promise<Map<string, Thumbnail>> {
+        this.record('thumbnails', contentIds);
+        return new Map(contentIds.filter(id => this.art.has(id)).map(id => [id, { data: Buffer.from(`thumb:${id}`), fileType: 'jpg' }] as const));
     }
 
     async select(contentId: string, opts?: { show?: boolean; category?: string }): Promise<void> {
