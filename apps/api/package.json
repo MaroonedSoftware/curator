@@ -6,7 +6,7 @@
     "description": "HTTP API over the Frame client",
     "license": "MIT",
     "scripts": {
-        "dev": "node --no-warnings --import @swc-node/register/esm-register --enable-source-maps --watch --watch-preserve-output ./src/index.ts",
+        "dev": "pnpm --filter @curator/frame build && node --no-warnings --import @swc-node/register/esm-register --enable-source-maps --watch --watch-preserve-output ./src/index.ts",
         "start": "node --enable-source-maps ./dist/index.js",
         "build": "tsc",
         "build:ci": "eslint --max-warnings=0 && pnpm run build",

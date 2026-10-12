@@ -41,7 +41,7 @@ template is rebuilt from scratch each run.
 ## Running
 
 ```
-pnpm dev     # from apps/api: watch mode on :14100
+pnpm dev     # from apps/api: rebuilds @curator/frame, then watch mode on :14100
 pnpm build && pnpm start
 ```
 
