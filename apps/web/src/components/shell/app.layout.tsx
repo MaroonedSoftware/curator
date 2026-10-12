@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { AppShell, Burger, Group, NavLink, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconActivity, type Icon } from '@tabler/icons-react';
+import { IconActivity, IconPhotoHeart, type Icon } from '@tabler/icons-react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { ApiStatus } from './api.status';
 
@@ -11,7 +11,10 @@ interface NavItem {
     icon: Icon;
 }
 
-const NAV: NavItem[] = [{ to: '/status', label: 'Status', icon: IconActivity }];
+const NAV: NavItem[] = [
+    { to: '/', label: 'Now showing', icon: IconPhotoHeart },
+    { to: '/status', label: 'Status', icon: IconActivity },
+];
 
 export function AppLayout({ children }: { children: ReactNode }) {
     const [opened, { toggle, close }] = useDisclosure();

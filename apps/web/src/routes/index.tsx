@@ -1,7 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
+import { NowShowingPage } from '../components/now/now.showing.page';
 
-export const Route = createFileRoute('/')({
-    beforeLoad: () => {
-        throw redirect({ to: '/status' });
-    },
-});
+export const Route = createFileRoute('/')({ component: NowShowingPage });

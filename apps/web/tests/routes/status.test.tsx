@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { errorResponse, fakeApi, healthy, jsonResponse } from '../fake.api';
-import { renderApp, screen, waitFor } from '../test.render';
+import { renderApp, screen } from '../test.render';
 
 const device = { model: 'QE55LS03B', name: 'Living Room', frameTvSupport: true, powerOn: true, raw: {} };
 
@@ -42,13 +42,5 @@ describe('status page', () => {
 
         expect(await screen.findByText('API offline')).toBeInTheDocument();
         expect(await screen.findByText('The API is unreachable')).toBeInTheDocument();
-    });
-
-    it('opens on the status page', async () => {
-        fakeApi({ 'GET /health': healthy, 'GET /tv': () => jsonResponse(device), 'GET /tv/api-version': () => jsonResponse({ version: '4.3.4.0' }) });
-
-        const { router } = renderApp('/');
-
-        await waitFor(() => expect(router.state.location.pathname).toBe('/status'));
     });
 });

@@ -1,4 +1,5 @@
 import { MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider, type AnyRouter } from '@tanstack/react-router';
 import { render, type RenderResult } from '@testing-library/react';
@@ -18,6 +19,7 @@ export function renderApp(path: string, queryClient = createTestQueryClient()): 
         <QueryClientProvider client={queryClient}>
             {/* env="test" turns off transitions and portals. */}
             <MantineProvider theme={theme} env="test" forceColorScheme="light">
+                <Notifications />
                 <RouterProvider router={router} />
             </MantineProvider>
         </QueryClientProvider>,
