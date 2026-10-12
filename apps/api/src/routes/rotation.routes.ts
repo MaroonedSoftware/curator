@@ -4,6 +4,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { AlbumRepository } from '../modules/albums/album.repository.js';
 import { RotationRepository, type RotationRow } from '../modules/albums/rotation.repository.js';
+import { RotationService } from '../modules/albums/rotation.service.js';
 import { storedTvOnly } from './stored.tv.hook.js';
 import { TvIdParams } from './tvs.routes.js';
 
@@ -69,6 +70,13 @@ export const RotationRoutes: FastifyPluginAsync = async instance => {
                 });
             return toRotation(await request.container.get(RotationRepository).set(tvId, request.body));
         },
+    );
+
+    // Shows the next piece now, rather than waiting for it to come due. The interval restarts from here.
+    app.post(
+        '/tvs/:tvId/rotation/advance',
+        { schema: { params: TvIdParams, response: { 200: z.object({ contentId: z.string() }) } } },
+        async request => ({ contentId: await request.container.get(RotationService).advance(request.params.tvId) }),
     );
 
     app.delete('/tvs/:tvId/rotation', { schema: { params: TvIdParams } }, async (request, reply) => {

@@ -80,6 +80,26 @@ describe('rotation', () => {
         expect((await inject('GET')).statusCode).toBe(204);
     });
 
+    it('POST /rotation/advance shows the next piece now', async () => {
+        await server.container.get(AlbumRepository).addPieces(server.tvId, halloween, ['MY-F0001']);
+        await inject('PUT', { albumId: halloween });
+
+        const response = await server.app.inject({ method: 'POST', url: `${server.base}/rotation/advance` });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toEqual({ contentId: 'MY-F0001' });
+        expect(server.tv.current_).toBe('MY-F0001');
+        expect((await inject('GET')).json()).toMatchObject({ lastContentId: 'MY-F0001', nextRotationAt: expect.any(String) });
+    });
+
+    it('POST /rotation/advance answers 404 when not rotating and 409 when nothing in the album is on the TV', async () => {
+        expect((await server.app.inject({ method: 'POST', url: `${server.base}/rotation/advance` })).statusCode).toBe(404);
+
+        await inject('PUT', { albumId: christmas });
+
+        expect((await server.app.inject({ method: 'POST', url: `${server.base}/rotation/advance` })).statusCode).toBe(409);
+    });
+
     it('answers 404 for an unknown TV', async () => {
         expect((await server.app.inject({ method: 'GET', url: '/tvs/6f1c2b9e-0000-4000-8000-000000000000/rotation' })).statusCode).toBe(404);
     });

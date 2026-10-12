@@ -54,6 +54,18 @@ export class RotationRepository {
         return row;
     }
 
+    /** The TVs whose next piece is due: never rotated yet, or a whole interval since they last did. */
+    async due(): Promise<string[]> {
+        const rows = await this.db
+            .selectFrom('tvRotations')
+            .select('tvId')
+            .where(eb =>
+                eb.or([eb('lastRotatedAt', 'is', null), eb(sql`last_rotated_at + interval_minutes * interval '1 minute'`, '<=', sql`now()`)]),
+            )
+            .execute();
+        return rows.map(row => row.tvId);
+    }
+
     /** Resolves false when the TV had no rotation. */
     async clear(tvId: string): Promise<boolean> {
         const result = await this.db.deleteFrom('tvRotations').where('tvId', '=', tvId).executeTakeFirst();

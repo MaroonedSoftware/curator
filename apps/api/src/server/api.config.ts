@@ -35,6 +35,14 @@ const ApiConfigSchema = z.object({
             originalsDir: z.string().min(1).default('.data/originals'),
         })
         .prefault({}),
+    rotation: z
+        .object({
+            /** How often to look for a TV whose next album piece is due. */
+            tickSeconds: z.coerce.number().int().min(1).max(3600).default(60),
+            /** How long to leave a TV that failed to advance (off, say) before trying it again. */
+            retrySeconds: z.coerce.number().int().min(1).max(86_400).default(300),
+        })
+        .prefault({}),
     discovery: z
         .object({
             /** How long `GET /tvs/discover` listens for TVs to answer. */

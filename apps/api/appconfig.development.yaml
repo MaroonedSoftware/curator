@@ -19,3 +19,8 @@ database:
 #     clientName: Curator            # shown on a TV's pairing prompt
 #     debug: false                   # log every frame on the wire, for every TV
 #     originalsDir: .data/originals  # uploaded images, kept per TV; relative to apps/api
+
+# A TV set to rotate through an album gets its next piece once its interval is up.
+# rotation:
+#     tickSeconds: 60     # how often to look for a TV whose next piece is due
+#     retrySeconds: 300   # how long to leave a TV that failed to advance (off, say)
