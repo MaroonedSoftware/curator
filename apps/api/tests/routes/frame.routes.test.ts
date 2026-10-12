@@ -401,6 +401,40 @@ describe('keeping uploaded originals', () => {
         }
     });
 
+    it('GET …/art/:contentId/original answers the kept image, named for download', async () => {
+        const contentId = await upload();
+
+        const response = await server.app.inject({ method: 'GET', url: `${server.base}/art/${contentId}/original` });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.headers['content-type']).toBe('image/jpeg');
+        expect(response.headers['cache-control']).toContain('immutable');
+        expect(response.headers['content-disposition']).toBe(`inline; filename="${contentId}.jpg"`);
+        expect(response.rawPayload).toEqual(jpeg);
+    });
+
+    it('GET …/art/:contentId/original finds an upload under either of its id forms', async () => {
+        const contentId = await upload();
+
+        const response = await server.app.inject({ method: 'GET', url: `${server.base}/art/${contentId.replace('-', '_')}/original` });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.rawPayload).toEqual(jpeg);
+    });
+
+    it('GET …/art/:contentId/original answers 404 for a piece not uploaded through curator', async () => {
+        const response = await server.app.inject({ method: 'GET', url: `${server.base}/art/SAM-S0001/original` });
+
+        expect(response.statusCode).toBe(404);
+    });
+
+    it('HEAD …/art/:contentId/original says whether an original is kept', async () => {
+        const contentId = await upload();
+
+        expect((await server.app.inject({ method: 'HEAD', url: `${server.base}/art/${contentId}/original` })).statusCode).toBe(200);
+        expect((await server.app.inject({ method: 'HEAD', url: `${server.base}/art/MY-F9999/original` })).statusCode).toBe(404);
+    });
+
     it('DELETE /tvs/:tvId leaves the TV’s originals in place', async () => {
         const contentId = await upload();
 

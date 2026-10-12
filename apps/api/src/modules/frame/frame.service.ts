@@ -1,7 +1,7 @@
 import type { ArtItem, DeviceInfo, FrameClient, Thumbnail, UploadOptions } from '@curator/frame';
 import { httpError } from '@maroonedsoftware/errors';
 import type { Logger } from '@maroonedsoftware/logger';
-import type { TvOriginals } from './original.store.js';
+import type { Original, TvOriginals } from './original.store.js';
 import type { ThumbnailBatcher } from './thumbnail.batcher.js';
 import { toHttpError } from './frame.http.errors.js';
 
@@ -67,6 +67,15 @@ export class FrameService {
             throw httpError(404).withDetails({ reason: `the TV has no thumbnail for ${contentId}` });
         }
         return thumbnail;
+    }
+
+    /** A piece's original, as uploaded through curator. 404 for anything else: the TV can't give one back. */
+    async original(contentId: string): Promise<Original> {
+        const original = await this.originals?.store.get(contentId);
+        if (!original) {
+            throw httpError(404).withDetails({ reason: `no original is kept for ${contentId}` });
+        }
+        return original;
     }
 
     deviceInfo(): Promise<DeviceInfo> {

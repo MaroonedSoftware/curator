@@ -88,6 +88,16 @@ const frameEndpoints: FastifyPluginAsync = async instance => {
             .send(thumbnail.data);
     });
 
+    app.get('/art/:contentId/original', { schema: { params: ContentIdParams } }, async (request, reply) => {
+        const { contentId } = request.params;
+        const original = await frameOf(request).original(contentId);
+        return reply
+            .type(original.fileType === 'png' ? 'image/png' : 'image/jpeg')
+            .header('cache-control', 'private, max-age=604800, immutable')
+            .header('content-disposition', `inline; filename="${contentId}.${original.fileType}"`)
+            .send(original.data);
+    });
+
     app.get('/art/current', { schema: { response: { 200: CurrentArt } } }, async request => frameOf(request).current());
 
     app.get('/art-mode', { schema: { response: { 200: z.object({ on: z.boolean() }) } } }, async request => ({
