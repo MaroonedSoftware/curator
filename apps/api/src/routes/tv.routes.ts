@@ -17,6 +17,16 @@ const ArtItem = z.object({ contentId: z.string(), categoryId: z.string(), raw: R
 
 const CurrentArt = z.object({ contentId: z.string().optional(), categoryId: z.string().optional(), raw: Raw });
 
+/** A TV content id: MY-Fxxxx for uploads, SAM-Sxxxx for the Art Store. */
+const ContentId = z.string().regex(/^[A-Za-z0-9_-]+$/, 'not a content id');
+
+const ContentIdParams = z.object({ contentId: ContentId });
+
+/** e.g. "none", "shadowbox_polar", "modern_apricot". Not every matte fits every aspect ratio. */
+const Matte = z.string().regex(/^[a-z0-9_]+$/, 'not a matte id');
+
+const json = { body: ['application/json'] };
+
 /** The Frame's own endpoints, one route per {@link FrameService} call. */
 export const TvRoutes: FastifyPluginAsync = async instance => {
     const app = instance.withTypeProvider<ZodTypeProvider>();
@@ -44,4 +54,43 @@ export const TvRoutes: FastifyPluginAsync = async instance => {
     app.get('/tv/art-mode', { schema: { response: { 200: z.object({ on: z.boolean() }) } } }, async request => ({
         on: await request.container.get(FrameService).getArtMode(),
     }));
+
+    app.put(
+        '/tv/art/current',
+        {
+            config: json,
+            schema: {
+                body: z.object({
+                    contentId: ContentId,
+                    /** Switch the TV to art mode to show it. Defaults to true. */
+                    show: z.boolean().optional(),
+                    category: z.string().min(1).optional(),
+                }),
+            },
+        },
+        async (request, reply) => {
+            const { contentId, ...opts } = request.body;
+            await request.container.get(FrameService).select(contentId, opts);
+            return reply.status(204).send();
+        },
+    );
+
+    app.delete('/tv/art/:contentId', { schema: { params: ContentIdParams } }, async (request, reply) => {
+        await request.container.get(FrameService).delete(request.params.contentId);
+        return reply.status(204).send();
+    });
+
+    app.put(
+        '/tv/art/:contentId/matte',
+        { config: json, schema: { params: ContentIdParams, body: z.object({ matte: Matte, portraitMatte: Matte.optional() }) } },
+        async (request, reply) => {
+            await request.container.get(FrameService).changeMatte(request.params.contentId, request.body.matte, request.body.portraitMatte);
+            return reply.status(204).send();
+        },
+    );
+
+    app.put('/tv/art-mode', { config: json, schema: { body: z.object({ on: z.boolean() }) } }, async (request, reply) => {
+        await request.container.get(FrameService).setArtMode(request.body.on);
+        return reply.status(204).send();
+    });
 };

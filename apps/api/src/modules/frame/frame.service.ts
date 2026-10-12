@@ -38,6 +38,25 @@ export class FrameService {
         return this.call(() => this.client.getArtMode());
     }
 
+    // The writes below are fire-and-forget on the TV's side: they resolve once the request is
+    // sent, even if the TV never acknowledges it. Only an unreachable TV fails them.
+
+    select(contentId: string, opts: { show?: boolean; category?: string }): Promise<void> {
+        return this.call(() => this.client.select(contentId, opts));
+    }
+
+    delete(contentId: string): Promise<void> {
+        return this.call(() => this.client.delete(contentId));
+    }
+
+    changeMatte(contentId: string, matte: string, portraitMatte?: string): Promise<void> {
+        return this.call(() => this.client.changeMatte(contentId, matte, portraitMatte));
+    }
+
+    setArtMode(on: boolean): Promise<void> {
+        return this.call(() => this.client.setArtMode(on));
+    }
+
     private async call<T>(fn: () => Promise<T>): Promise<T> {
         try {
             return await fn();
