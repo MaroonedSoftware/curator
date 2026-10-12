@@ -9,6 +9,7 @@ describe('now showing', () => {
         fakeApi({
             ...withTv(),
             [`GET ${TV_BASE}/art/current`]: () => jsonResponse(current),
+            [`GET ${TV_BASE}/rotation`]: () => noContent(),
             [`GET ${TV_BASE}/art-mode`]: () => jsonResponse({ on: true }),
         });
 
@@ -25,6 +26,7 @@ describe('now showing', () => {
         const requests = fakeApi({
             ...withTv(),
             [`GET ${TV_BASE}/art/current`]: () => jsonResponse(current),
+            [`GET ${TV_BASE}/rotation`]: () => noContent(),
             [`GET ${TV_BASE}/art-mode`]: () => jsonResponse({ on }),
             [`PUT ${TV_BASE}/art-mode`]: request => {
                 on = (request.body as { on: boolean }).on;
@@ -48,6 +50,7 @@ describe('now showing', () => {
         fakeApi({
             ...withTv(),
             [`GET ${TV_BASE}/art/current`]: () => jsonResponse(current),
+            [`GET ${TV_BASE}/rotation`]: () => noContent(),
             [`GET ${TV_BASE}/art-mode`]: () => jsonResponse({ on: true }),
             [`PUT ${TV_BASE}/art-mode`]: () => errorResponse(503, 'Service Unavailable', { reason: 'cannot reach TV' }),
         });
@@ -64,6 +67,7 @@ describe('now showing', () => {
         fakeApi({
             ...withTv(),
             [`GET ${TV_BASE}/art/current`]: () => errorResponse(503, 'Service Unavailable', { reason: 'cannot reach TV' }),
+            [`GET ${TV_BASE}/rotation`]: () => noContent(),
             [`GET ${TV_BASE}/art-mode`]: () => errorResponse(503, 'Service Unavailable', { reason: 'cannot reach TV' }),
         });
 

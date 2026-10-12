@@ -77,6 +77,25 @@ export interface AlbumDetail extends Album {
     contentIds: string[];
 }
 
+/** The album a TV cycles through, one piece every `intervalMinutes`. */
+export interface Rotation {
+    albumId: string;
+    albumName: string;
+    intervalMinutes: number;
+    /** A random piece each time, or the album's order. */
+    shuffle: boolean;
+    lastContentId?: string;
+    lastRotatedAt?: string;
+    /** When the next piece is due. Absent when it is due now. */
+    nextRotationAt?: string;
+}
+
+export interface RotationSetting {
+    albumId: string;
+    intervalMinutes?: number;
+    shuffle?: boolean;
+}
+
 export interface MatteOptions {
     matte?: string;
     portraitMatte?: string;
@@ -196,6 +215,13 @@ export const tvApi = (tvId: string) => {
             request<void>(`${base}/albums/${encodeURIComponent(albumId)}/pieces`, json('PUT', { contentIds })),
         removeFromAlbum: (albumId: string, contentId: string) =>
             request<void>(`${base}/albums/${encodeURIComponent(albumId)}/pieces/${encodeURIComponent(contentId)}`, { method: 'DELETE' }),
+
+        /** Resolves undefined when the TV isn't rotating. */
+        rotation: () => request<Rotation | undefined>(`${base}/rotation`),
+        setRotation: (setting: RotationSetting) => request<Rotation>(`${base}/rotation`, json('PUT', setting)),
+        stopRotation: () => request<void>(`${base}/rotation`, { method: 'DELETE' }),
+        /** Shows the album's next piece now. Resolves with its content id. */
+        advanceRotation: async () => (await request<{ contentId: string }>(`${base}/rotation/advance`, { method: 'POST' })).contentId,
 
         /** Resolves with the content id the TV assigned. */
         uploadArt: async (image: Blob, opts: MatteOptions = {}) =>

@@ -75,6 +75,7 @@ function fakeTv() {
             state.current = (request.body as { contentId: string }).contentId;
             return noContent();
         },
+        [`GET ${TV_BASE}/rotation`]: () => noContent(),
         [`GET ${TV_BASE}/albums`]: () => jsonResponse({ items: state.albums.map(summary) }),
         [`POST ${TV_BASE}/albums`]: request => {
             const created = { id: NEW, name: (request.body as { name: string }).name, contentIds: [] as string[] };

@@ -6,10 +6,11 @@ import { useSetArtMode } from '../../api/tv.mutations';
 import { artModeOptions, currentArtOptions } from '../../api/tv.queries';
 import { useTv } from '../../tvs/tv.context';
 import { ErrorAlert } from '../shared/error.alert';
+import { RotationCard } from './rotation.card';
 
 const matteOf = (raw: Record<string, unknown>): string | undefined => (typeof raw.matte_id === 'string' ? raw.matte_id : undefined);
 
-/** The artwork on screen, and whether the TV is showing art at all. */
+/** The artwork on screen, whether the TV is showing art at all, and the album it rotates through. */
 export function NowShowingPage() {
     const tv = useTv();
     const current = useQuery(currentArtOptions(tv.id));
@@ -46,6 +47,8 @@ export function NowShowingPage() {
                     />
                 </Card>
             )}
+
+            <RotationCard />
 
             {current.isPending && <Skeleton h={140} />}
             {current.isSuccess && (

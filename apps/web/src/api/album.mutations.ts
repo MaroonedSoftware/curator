@@ -1,15 +1,21 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { tvApi } from './api.client';
+import { tvApi, type RotationSetting } from './api.client';
 import { queryKeys } from './query.keys';
 import { notifyFailure } from './tv.mutations';
 
-/** Every album write refreshes the TV's albums, and with them each album's detail. */
+/**
+ * Every album write refreshes the TV's albums, and with them each album's detail, and the rotation,
+ * which names its album and stops when the album is deleted.
+ */
 function useAlbumMutation<TVariables, TData>(tvId: string, mutationFn: (variables: TVariables) => Promise<TData>) {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn,
         onError: notifyFailure,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.albums(tvId) }),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.albums(tvId) });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.rotation(tvId) });
+        },
     });
 }
 
@@ -26,3 +32,22 @@ export const useAddToAlbum = (tvId: string) =>
 
 export const useRemoveFromAlbum = (tvId: string) =>
     useAlbumMutation(tvId, ({ albumId, contentId }: { albumId: string; contentId: string }) => tvApi(tvId).removeFromAlbum(albumId, contentId));
+
+/** Every rotation write refreshes the rotation, and what is on screen, which advancing changes. */
+function useRotationMutation<TVariables, TData>(tvId: string, mutationFn: (variables: TVariables) => Promise<TData>) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn,
+        onError: notifyFailure,
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.rotation(tvId) });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.currentArt(tvId) });
+        },
+    });
+}
+
+export const useSetRotation = (tvId: string) => useRotationMutation(tvId, (setting: RotationSetting) => tvApi(tvId).setRotation(setting));
+
+export const useStopRotation = (tvId: string) => useRotationMutation(tvId, () => tvApi(tvId).stopRotation());
+
+export const useAdvanceRotation = (tvId: string) => useRotationMutation(tvId, () => tvApi(tvId).advanceRotation());

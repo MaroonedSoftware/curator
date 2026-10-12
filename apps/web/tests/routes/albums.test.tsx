@@ -23,6 +23,7 @@ function fakeAlbums(albums = [album(HALLOWEEN, 'Halloween', ['MY-F0001', 'MY-F00
     const summary = ({ contentIds: _contentIds, ...rest }: (typeof albums)[number]) => rest;
     const requests = fakeApi({
         ...withTv(),
+        [`GET ${TV_BASE}/rotation`]: () => noContent(),
         [`GET ${TV_BASE}/albums`]: () => jsonResponse({ items: [...state.albums].sort((a, b) => a.name.localeCompare(b.name)).map(summary) }),
         [`POST ${TV_BASE}/albums`]: request => {
             const { name } = request.body as { name: string };

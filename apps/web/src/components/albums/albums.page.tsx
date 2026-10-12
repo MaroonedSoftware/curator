@@ -3,19 +3,21 @@ import { Button, Group, SimpleGrid, Skeleton, Stack, Text, Title } from '@mantin
 import { IconPlus } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import type { Album } from '../../api/api.client';
-import { albumsOptions } from '../../api/album.queries';
+import { albumsOptions, rotationOptions } from '../../api/album.queries';
 import { useTv } from '../../tvs/tv.context';
 import { ErrorAlert } from '../shared/error.alert';
 import { AlbumCard } from './album.card';
 import { AlbumNameModal } from './album.name.modal';
 import { DeleteAlbumModal } from './delete.album.modal';
+import { RotationModal } from './rotation.modal';
 
-type Dialog = { kind: 'create' } | { kind: 'rename' | 'delete'; album: Album };
+type Dialog = { kind: 'create' } | { kind: 'rotate' | 'rename' | 'delete'; album: Album };
 
 /** The TV's albums: named sets of its pieces, such as Halloween or Christmas. */
 export function AlbumsPage() {
     const tv = useTv();
     const albums = useQuery(albumsOptions(tv.id));
+    const rotation = useQuery(rotationOptions(tv.id));
     const [dialog, setDialog] = useState<Dialog>();
     const close = () => setDialog(undefined);
 
@@ -39,6 +41,8 @@ export function AlbumsPage() {
                         <AlbumCard
                             key={album.id}
                             album={album}
+                            rotating={rotation.data?.albumId === album.id}
+                            onRotate={() => setDialog({ kind: 'rotate', album })}
                             onRename={() => setDialog({ kind: 'rename', album })}
                             onDelete={() => setDialog({ kind: 'delete', album })}
                         />
@@ -47,6 +51,7 @@ export function AlbumsPage() {
             )}
 
             {dialog?.kind === 'create' && <AlbumNameModal onClose={close} />}
+            {dialog?.kind === 'rotate' && <RotationModal albumId={dialog.album.id} onClose={close} />}
             {dialog?.kind === 'rename' && <AlbumNameModal album={dialog.album} onClose={close} />}
             {dialog?.kind === 'delete' && <DeleteAlbumModal album={dialog.album} onClose={close} />}
         </Stack>
