@@ -42,10 +42,19 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
     const tv = new FakeFrameClient();
     /** The fake behind each stored TV, by TV id, built when the API first reaches for that TV. */
     const tvs = new Map<string, { client: FakeFrameClient; address: TvAddress; tokenStore: TokenStore }>();
+    /** Every client the factory built, in order, including the short-lived ones `POST /tvs` pairs with. */
+    const built: FakeFrameClient[] = [];
+    /** Runs on each client as it is built, to set up the TV a test needs before the API reaches it. */
+    let prepare: (client: FakeFrameClient) => void = () => {};
     const factory: FrameClientFactory = (address, tokenStore) => {
-        const client = new FakeFrameClient();
+        const client = new FakeFrameClient(tokenStore);
+        prepare(client);
+        built.push(client);
         tvs.set(address.id, { client, address, tokenStore });
         return client;
+    };
+    const prepareTvs = (fn: (client: FakeFrameClient) => void) => {
+        prepare = fn;
     };
     const fakeTv: ServerKitModule = {
         name: 'FakeTv',
@@ -84,5 +93,5 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
         return db.insertInto('tvs').values(tv).returningAll().executeTakeFirstOrThrow();
     };
 
-    return { app: builder.app, container, tv, tvs, db, addTv, dbName, close };
+    return { app: builder.app, container, tv, tvs, built, prepareTvs, db, addTv, dbName, close };
 };

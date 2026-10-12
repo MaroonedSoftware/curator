@@ -1,4 +1,4 @@
-import type { ArtItem, DeviceInfo, FrameClient, UploadOptions } from '@curator/frame';
+import type { ArtItem, DeviceInfo, FrameClient, TokenStore, UploadOptions } from '@curator/frame';
 
 /** An in-memory {@link FrameClient}: the TV's state as plain fields, and every call recorded. */
 export class FakeFrameClient implements FrameClient {
@@ -12,14 +12,31 @@ export class FakeFrameClient implements FrameClient {
     closed = false;
     /** Thrown by the next call, then cleared. */
     failNext?: Error;
+    /** Thrown by every call to the named method. */
+    readonly failOn = new Map<string, Error>();
+    /** What `deviceInfo` reports. */
+    device: DeviceInfo = {
+        model: 'QE55LS03B',
+        name: 'Living Room',
+        frameTvSupport: true,
+        powerOn: true,
+        raw: { device: { modelName: 'QE55LS03B' } },
+    };
+    /** The token the TV issues when the art channel opens, as a real one does on pairing. */
+    issuedToken: string | undefined = 'issued-token';
+
+    constructor(private readonly tokenStore?: TokenStore) {}
 
     async deviceInfo(): Promise<DeviceInfo> {
         this.record('deviceInfo');
-        return { model: 'QE55LS03B', name: 'Living Room', frameTvSupport: true, powerOn: true, raw: { device: { modelName: 'QE55LS03B' } } };
+        return this.device;
     }
 
     async apiVersion(): Promise<string> {
         this.record('apiVersion');
+        if (this.issuedToken) {
+            await this.tokenStore?.save(this.issuedToken);
+        }
         return '4.3.4.0';
     }
 
@@ -77,6 +94,10 @@ export class FakeFrameClient implements FrameClient {
 
     private record(method: string, ...args: unknown[]) {
         this.calls.push({ method, args });
+        const failOn = this.failOn.get(method);
+        if (failOn) {
+            throw failOn;
+        }
         const failure = this.failNext;
         if (failure) {
             this.failNext = undefined;

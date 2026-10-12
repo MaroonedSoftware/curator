@@ -37,6 +37,9 @@ const TvIdParams = z.object({ tvId: z.uuid() });
 /** A TV's name: trimmed, not blank, short enough to fit a menu. */
 const TvName = z.string().trim().min(1).max(60);
 
+/** Where to find a TV: an IP address or a hostname such as `frame.local`, never a URL. */
+const Host = z.union([z.ipv4(), z.ipv6(), z.hostname()], { error: 'host must be an IP address or a hostname' });
+
 /**
  * The `:tvId` a request names, checked before anything reaches Postgres: a malformed id is a 400,
  * not a failed uuid cast.
@@ -56,6 +59,18 @@ export const TvsRoutes: FastifyPluginAsync = async instance => {
     app.get('/tvs', { schema: { response: { 200: z.object({ items: z.array(Tv) }) } } }, async request => ({
         items: (await request.container.get(TvService).list()).map(toTv),
     }));
+
+    app.post(
+        '/tvs',
+        {
+            config: { body: ['application/json'] },
+            schema: {
+                body: z.object({ host: Host, port: z.number().int().min(1).max(65535).default(8002), name: TvName.optional() }),
+                response: { 201: Tv },
+            },
+        },
+        async (request, reply) => reply.status(201).send(toTv(await request.container.get(TvService).connect(request.body))),
+    );
 
     app.get('/tvs/:tvId', { schema: { params: TvIdParams, response: { 200: Tv } } }, async request =>
         toTv(await request.container.get(TvService).get(request.params.tvId)),

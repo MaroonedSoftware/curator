@@ -54,7 +54,9 @@ export const TvsModule: ServerKitModule = {
 
         registry
             .register(TvService)
-            .useFactory(container => new TvService(container.get(TvRepository), container.get(FrameClientRegistry)))
+            .useFactory(
+                container => new TvService(container.get(TvRepository), container.get(FrameClientRegistry), container.get(FrameClientFactoryToken)),
+            )
             .asSingleton();
     },
     shutdown: async container => {

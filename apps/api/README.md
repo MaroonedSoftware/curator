@@ -72,6 +72,12 @@ There is no authentication: the API is meant for the home network the TV sits on
 | PATCH  | `/tvs/:tvId` | `{ name }` renames it. Answers the `Tv`                               |
 | DELETE | `/tvs/:tvId` | Forgets the TV and closes its connection. 204                         |
 
+`POST /tvs` checks the address is a Frame, then pairs with it: the TV shows a prompt that someone
+must accept with the remote, so the request can take up to 30 seconds. The TV is stored only once
+pairing succeeds. It answers 409 (with `details.tvId`) for an address already added, 422 for a
+Samsung TV that isn't a Frame, 503 when nothing answers, and 502 when the prompt is declined or
+times out. `port` defaults to 8002; `name` to the name the TV reports.
+
 A TV's pairing token is stored in its row and never returned. `paired: false` means the TV must be
 paired again. An unknown `tvId` is a 404, a malformed one a 400.
 
