@@ -95,6 +95,9 @@ export const Category = {
 /** Uploads are ours to delete: anything in My Photos, or with an upload's id (MY-F0001, or MY_F0001 on newer firmware). */
 export const isUpload = (item: ArtItem): boolean => item.categoryIds.includes(Category.MyPhotos) || /^MY[-_]F/.test(item.contentId);
 
+/** A content id as albums keep it: newer firmware reports MY_F0019 where older reports MY-F0019, so `_` is read as `-`. */
+export const normalizeContentId = (contentId: string): string => contentId.replaceAll('_', '-');
+
 /** A non-2xx answer from the API, carrying its status and the `details` ServerKit renders. */
 export class ApiError extends Error {
     constructor(

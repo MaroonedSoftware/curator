@@ -8,6 +8,7 @@ import { matteLabel } from '../../api/mattes';
 import { useSelectArt } from '../../api/tv.mutations';
 import { artListOptions, currentArtOptions, hasOriginalOptions } from '../../api/tv.queries';
 import { useTv } from '../../tvs/tv.context';
+import { AddToAlbumModal } from '../albums/add.to.album.modal';
 import { ErrorAlert } from '../shared/error.alert';
 import { ArtActions } from './art.actions';
 import { ArtThumbnail } from './art.thumbnail';
@@ -48,7 +49,7 @@ const VIEWS = [
 
 const matteOf = (item: ArtItem) => (typeof item.raw.matte_id === 'string' ? item.raw.matte_id : undefined);
 
-type Dialog = { kind: 'matte' | 'delete'; item: ArtItem };
+type Dialog = { kind: 'matte' | 'albums' | 'delete'; item: ArtItem };
 
 interface LibraryPageProps {
     category: string;
@@ -78,6 +79,7 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange, pi
             item={item}
             onShow={() => show(item)}
             onChangeMatte={() => setDialog({ kind: 'matte', item })}
+            onAddToAlbum={() => setDialog({ kind: 'albums', item })}
             onDelete={() => setDialog({ kind: 'delete', item })}
         />
     );
@@ -174,6 +176,7 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange, pi
                     onClose={() => onPieceChange(undefined)}
                     onShow={() => show(open)}
                     onChangeMatte={() => setDialog({ kind: 'matte', item: open })}
+                    onAddToAlbum={() => setDialog({ kind: 'albums', item: open })}
                     onDelete={() => {
                         // The piece is about to be gone, so the viewer closes rather than showing it.
                         onPieceChange(undefined);
@@ -182,6 +185,7 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange, pi
                 />
             )}
             {dialog?.kind === 'matte' && <MatteModal item={dialog.item} onClose={() => setDialog(undefined)} />}
+            {dialog?.kind === 'albums' && <AddToAlbumModal contentId={dialog.item.contentId} onClose={() => setDialog(undefined)} />}
             {dialog?.kind === 'delete' && <DeleteModal item={dialog.item} onClose={() => setDialog(undefined)} />}
         </Stack>
     );

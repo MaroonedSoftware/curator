@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ActionIcon, Badge, Button, Group, Image, Modal, Stack, Table, Text } from '@mantine/core';
-import { IconChevronLeft, IconChevronRight, IconDownload, IconFrame, IconPlayerPlay, IconTrash } from '@tabler/icons-react';
+import { IconAlbum, IconChevronLeft, IconChevronRight, IconDownload, IconFrame, IconPlayerPlay, IconTrash } from '@tabler/icons-react';
 import { isUpload, type ArtItem } from '../../api/api.client';
 import { artDetails } from '../../api/art.details';
 import { matteLabel } from '../../api/mattes';
@@ -18,6 +18,7 @@ interface ArtViewerProps {
     onClose: () => void;
     onShow: () => void;
     onChangeMatte: () => void;
+    onAddToAlbum: () => void;
     onDelete: () => void;
 }
 
@@ -38,6 +39,7 @@ export function ArtViewer({
     onClose,
     onShow,
     onChangeMatte,
+    onAddToAlbum,
     onDelete,
 }: ArtViewerProps) {
     const index = items.findIndex(candidate => candidate.contentId === item.contentId);
@@ -156,6 +158,9 @@ export function ArtViewer({
                             Delete
                         </Button>
                     )}
+                    <Button variant="default" leftSection={<IconAlbum size={16} />} onClick={onAddToAlbum}>
+                        Albums
+                    </Button>
                     <Button variant="default" leftSection={<IconFrame size={16} />} onClick={onChangeMatte}>
                         Change matte
                     </Button>
