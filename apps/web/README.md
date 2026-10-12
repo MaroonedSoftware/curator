@@ -15,12 +15,13 @@ production deployment needs the same: the API reachable at `/api` on the app's o
 
 ## Pages
 
-| Path       | Does                                                                              |
-| ---------- | --------------------------------------------------------------------------------- |
-| `/`        | Now showing: the artwork on screen, and an art-mode switch                        |
-| `/library` | The TV's art by category (`?category=`), with Show on TV, Change matte and Delete |
-| `/upload`  | Drop a JPEG or PNG (up to 20MB), pick its mattes, and optionally show it at once  |
-| `/status`  | The TV's model, power state and art API version                                   |
+| Path       | Does                                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `/`        | Now showing: the artwork on screen, and an art-mode switch                                                                |
+| `/library` | The TV's art by category (`?category=`), with Show on TV, Change matte and Delete                                         |
+| `/upload`  | Drop a JPEG or PNG (up to 20MB), pick its mattes, and optionally show it at once                                          |
+| `/status`  | The TV's model, power state and art API version                                                                           |
+| `/tvs`     | The stored TVs (rename, remove), and adding one: search the network or type its address, then accept the prompt on the TV |
 
 The TV doesn't confirm most writes, so pages read its state back afterwards rather than trusting
 the request. Delete is offered only for uploads (My Photos). Mattes are a style and a colour from

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as StatusRouteImport } from './routes/status'
+import { Route as TvsRouteImport } from './routes/tvs'
 import { Route as UploadRouteImport } from './routes/upload'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const StatusRoute = StatusRouteImport.update({
   path: '/status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TvsRoute = TvsRouteImport.update({
+  id: '/tvs',
+  path: '/tvs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/library': typeof LibraryRoute
   '/status': typeof StatusRoute
+  '/tvs': typeof TvsRoute
   '/upload': typeof UploadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/library': typeof LibraryRoute
   '/status': typeof StatusRoute
+  '/tvs': typeof TvsRoute
   '/upload': typeof UploadRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/library': typeof LibraryRoute
   '/status': typeof StatusRoute
+  '/tvs': typeof TvsRoute
   '/upload': typeof UploadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/library' | '/status' | '/upload'
+  fullPaths: '/' | '/library' | '/status' | '/tvs' | '/upload'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/library' | '/status' | '/upload'
-  id: '__root__' | '/' | '/library' | '/status' | '/upload'
+  to: '/' | '/library' | '/status' | '/tvs' | '/upload'
+  id: '__root__' | '/' | '/library' | '/status' | '/tvs' | '/upload'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LibraryRoute: typeof LibraryRoute
   StatusRoute: typeof StatusRoute
+  TvsRoute: typeof TvsRoute
   UploadRoute: typeof UploadRoute
 }
 
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tvs': {
+      id: '/tvs'
+      path: '/tvs'
+      fullPath: '/tvs'
+      preLoaderRoute: typeof TvsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/upload': {
       id: '/upload'
       path: '/upload'
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LibraryRoute: LibraryRoute,
   StatusRoute: StatusRoute,
+  TvsRoute: TvsRoute,
   UploadRoute: UploadRoute,
 }
 export const routeTree = rootRouteImport

@@ -30,6 +30,34 @@ export interface CurrentArt {
     raw: Record<string, unknown>;
 }
 
+/** A TV curator manages. */
+export interface Tv {
+    id: string;
+    name: string;
+    host: string;
+    port: number;
+    model?: string;
+    /** False when the TV must be paired again. */
+    paired: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/** A Frame found on the network. `tvId` is set when it is already added. */
+export interface DiscoveredTv {
+    host: string;
+    port: number;
+    name?: string;
+    model?: string;
+    tvId?: string;
+}
+
+export interface ConnectTv {
+    host: string;
+    port?: number;
+    name?: string;
+}
+
 export interface MatteOptions {
     matte?: string;
     portraitMatte?: string;
@@ -90,6 +118,16 @@ const query = (params: Record<string, string | undefined>): string => {
 
 export const api = {
     health: () => request<Health>('/health'),
+
+    tvs: async () => (await request<{ items: Tv[] }>('/tvs')).items,
+    tv: (tvId: string) => request<Tv>(`/tvs/${encodeURIComponent(tvId)}`),
+    /** Searches the network for a few seconds. */
+    discoverTvs: async () => (await request<{ items: DiscoveredTv[] }>('/tvs/discover')).items,
+    /** Pairs with the TV, which waits for someone to accept the prompt on it: up to 30 seconds. */
+    connectTv: (tv: ConnectTv) => request<Tv>('/tvs', json('POST', tv)),
+    renameTv: (tvId: string, name: string) => request<Tv>(`/tvs/${encodeURIComponent(tvId)}`, json('PATCH', { name })),
+    removeTv: (tvId: string) => request<void>(`/tvs/${encodeURIComponent(tvId)}`, { method: 'DELETE' }),
+
     device: () => request<Device>('/tv'),
     apiVersion: async () => (await request<{ version: string }>('/tv/api-version')).version,
     listArt: async (category?: string) => (await request<{ items: ArtItem[] }>(`/tv/art${query({ category })}`)).items,

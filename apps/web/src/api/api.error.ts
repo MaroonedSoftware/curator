@@ -18,6 +18,8 @@ export function describeError(error: unknown): ErrorDescription {
             return { title: 'The TV didn’t answer', message: reason };
         case 502:
             return { title: 'The TV refused the request', message: reason };
+        case 409:
+            return { title: 'Already added', message: reason };
         case 422:
             return { title: 'The TV rejected that', message: reason };
         default:

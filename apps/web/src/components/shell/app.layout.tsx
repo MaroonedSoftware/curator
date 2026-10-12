@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { AppShell, Burger, Group, NavLink, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconActivity, IconLibraryPhoto, IconPhotoHeart, IconUpload, type Icon } from '@tabler/icons-react';
+import { IconActivity, IconDeviceTv, IconLibraryPhoto, IconPhotoHeart, IconUpload, type Icon } from '@tabler/icons-react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { ApiStatus } from './api.status';
 
@@ -16,6 +16,7 @@ const NAV: NavItem[] = [
     { to: '/library', label: 'Library', icon: IconLibraryPhoto },
     { to: '/upload', label: 'Upload', icon: IconUpload },
     { to: '/status', label: 'Status', icon: IconActivity },
+    { to: '/tvs', label: 'TVs', icon: IconDeviceTv },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
