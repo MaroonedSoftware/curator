@@ -3,8 +3,8 @@ import type { ZodTypeProvider } from '@maroonedsoftware/fastify/zod';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { AlbumRepository, type AlbumRow } from '../modules/albums/album.repository.js';
-import { TvRepository } from '../modules/tvs/tv.repository.js';
 import { ContentId } from './frame.routes.js';
+import { storedTvOnly } from './stored.tv.hook.js';
 import { TvIdParams } from './tvs.routes.js';
 
 /** An album, as the API shows it. */
@@ -45,10 +45,7 @@ const json = { body: ['application/json'] };
 export const AlbumsRoutes: FastifyPluginAsync = async instance => {
     const app = instance.withTypeProvider<ZodTypeProvider>();
 
-    // Params are parsed by now, so a malformed id has already been refused with a 400.
-    app.addHook('preHandler', async request => {
-        await request.container.get(TvRepository).get((request.params as z.infer<typeof TvIdParams>).tvId);
-    });
+    app.addHook('preHandler', storedTvOnly);
 
     app.get('/tvs/:tvId/albums', { schema: { params: TvIdParams, response: { 200: z.object({ items: z.array(Album) }) } } }, async request => ({
         items: (await request.container.get(AlbumRepository).list(request.params.tvId)).map(toAlbum),

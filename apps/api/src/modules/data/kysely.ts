@@ -3,41 +3,51 @@
  * Please do not edit it manually.
  */
 
-import type { ColumnType } from "kysely";
-import type { DateTime } from "luxon";
+import type { ColumnType } from 'kysely';
+import type { DateTime } from 'luxon';
 
-export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
-  ? ColumnType<S, I | undefined, U>
-  : ColumnType<T, T | undefined, T>;
+export type Generated<T> = T extends ColumnType<infer S, infer I, infer U> ? ColumnType<S, I | undefined, U> : ColumnType<T, T | undefined, T>;
 
 export interface AlbumPieces {
-  addedAt: Generated<DateTime>;
-  albumId: string;
-  contentId: string;
-  position: number;
+    addedAt: Generated<DateTime>;
+    albumId: string;
+    contentId: string;
+    position: number;
 }
 
 export interface Albums {
-  createdAt: Generated<DateTime>;
-  id: Generated<string>;
-  name: string;
-  tvId: string;
-  updatedAt: Generated<DateTime>;
+    createdAt: Generated<DateTime>;
+    id: Generated<string>;
+    name: string;
+    tvId: string;
+    updatedAt: Generated<DateTime>;
+}
+
+export interface TvRotations {
+    albumId: string;
+    createdAt: Generated<DateTime>;
+    intervalMinutes: Generated<number>;
+    lastContentId: string | null;
+    lastRotatedAt: DateTime | null;
+    shuffle: Generated<boolean>;
+    tvId: string;
+    updatedAt: Generated<DateTime>;
 }
 
 export interface Tvs {
-  createdAt: Generated<DateTime>;
-  host: string;
-  id: Generated<string>;
-  model: string | null;
-  name: string;
-  port: Generated<number>;
-  token: string | null;
-  updatedAt: Generated<DateTime>;
+    createdAt: Generated<DateTime>;
+    host: string;
+    id: Generated<string>;
+    model: string | null;
+    name: string;
+    port: Generated<number>;
+    token: string | null;
+    updatedAt: Generated<DateTime>;
 }
 
 export interface DB {
-  albumPieces: AlbumPieces;
-  albums: Albums;
-  tvs: Tvs;
+    albumPieces: AlbumPieces;
+    albums: Albums;
+    tvRotations: TvRotations;
+    tvs: Tvs;
 }
