@@ -13,8 +13,8 @@ const upload: Item = {
 };
 const store: Item = { contentId: 'SAM-S0001', categoryId: 'MY-C0008', categoryIds: ['MY-C0008'], raw: { content_id: 'SAM-S0001', matte_id: 'none' } };
 
-/** A TV holding `art`, with SAM-S0001 on screen. Writes change the state the next read returns. */
-function fakeTv(art: Item[] = [upload, store]) {
+/** A TV holding `art`, with SAM-S0001 on screen and the originals of `originals` kept. Writes change the state the next read returns. */
+function fakeTv(art: Item[] = [upload, store], originals: string[] = []) {
     const state = { art: [...art], current: 'SAM-S0001' };
     const requests = fakeApi({
         ...withTv(),
@@ -33,11 +33,12 @@ function fakeTv(art: Item[] = [upload, store]) {
             return noContent();
         },
         [`PUT ${TV_BASE}/art/MY-F0001/matte`]: () => noContent(),
+        [`HEAD ${TV_BASE}/art/MY-F0001/original`]: () => new Response(null, { status: originals.includes('MY-F0001') ? 200 : 404 }),
     });
     return { state, requests };
 }
 
-const writes = <T extends { method: string }>(requests: T[]) => requests.filter(request => request.method !== 'GET');
+const writes = <T extends { method: string }>(requests: T[]) => requests.filter(request => request.method !== 'GET' && request.method !== 'HEAD');
 
 describe('library', () => {
     it('lists the TV’s artwork with its category and matte, marking what’s on screen', async () => {
@@ -240,6 +241,38 @@ describe('library', () => {
         expect(within(viewer).getByText('1 of 2')).toBeInTheDocument();
         expect(within(viewer).getByRole('button', { name: 'Delete' })).toBeInTheDocument();
         expect(router.state.location.search).toEqual({ piece: 'MY-F0001' });
+    });
+
+    it('shows the kept original in the viewer, and offers it for download', async () => {
+        fakeTv([upload, store], ['MY-F0001']);
+
+        renderApp(`${TV_BASE}/library?piece=MY-F0001`);
+
+        const viewer = await screen.findByRole('dialog');
+        const download = await within(viewer).findByRole('link', { name: 'Download' });
+        expect(download).toHaveAttribute('href', `/api${TV_BASE}/art/MY-F0001/original`);
+        expect(download).toHaveAttribute('download');
+        expect(within(viewer).getByRole('img', { name: 'MY-F0001' })).toHaveAttribute('src', `/api${TV_BASE}/art/MY-F0001/original`);
+    });
+
+    it('shows the thumbnail and no download for an upload whose original was not kept', async () => {
+        const { requests } = fakeTv();
+
+        renderApp(`${TV_BASE}/library?piece=MY-F0001`);
+
+        const viewer = await screen.findByRole('dialog');
+        await waitFor(() => expect(requests.some(request => request.method === 'HEAD')).toBe(true));
+        expect(within(viewer).getByRole('img', { name: 'MY-F0001' })).toHaveAttribute('src', `/api${TV_BASE}/art/MY-F0001/thumbnail`);
+        expect(within(viewer).queryByRole('link', { name: 'Download' })).not.toBeInTheDocument();
+    });
+
+    it('does not ask after the original of a piece from the Art Store', async () => {
+        const { requests } = fakeTv();
+
+        renderApp(`${TV_BASE}/library?piece=SAM-S0001`);
+
+        expect(await screen.findByRole('dialog')).toBeInTheDocument();
+        expect(requests.some(request => request.method === 'HEAD')).toBe(false);
     });
 
     it('steps through pieces with the arrow keys and buttons, and closes with Escape', async () => {

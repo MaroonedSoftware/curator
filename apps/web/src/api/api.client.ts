@@ -157,6 +157,15 @@ export const tvApi = (tvId: string) => {
 
         /** Where the browser loads a piece's thumbnail from. The API batches and caches these. */
         thumbnailUrl: (contentId: string) => `${BASE}${base}/art/${encodeURIComponent(contentId)}/thumbnail`,
+        /** Where the browser loads a piece's original from, when the API kept one: see `hasOriginal`. */
+        originalUrl: (contentId: string) => `${BASE}${base}/art/${encodeURIComponent(contentId)}/original`,
+        /** Whether the API kept the piece's original, which it does only for pieces uploaded through curator. */
+        hasOriginal: async (contentId: string) => {
+            const response = await fetch(`${BASE}${base}/art/${encodeURIComponent(contentId)}/original`, { method: 'HEAD' });
+            if (response.status === 404) return false;
+            if (!response.ok) throw new ApiError(response.status, response.statusText);
+            return true;
+        },
 
         /** Resolves with the content id the TV assigned. */
         uploadArt: async (image: Blob, opts: MatteOptions = {}) =>

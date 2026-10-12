@@ -9,6 +9,7 @@ export const queryKeys = {
     apiVersion: (tvId: string) => ['tvs', tvId, 'api-version'] as const,
     art: (tvId: string, category?: string) => ['tvs', tvId, 'art', 'list', category ?? 'all'] as const,
     allArt: (tvId: string) => ['tvs', tvId, 'art', 'list'] as const,
+    hasOriginal: (tvId: string, contentId: string) => ['tvs', tvId, 'art', 'original', contentId] as const,
     currentArt: (tvId: string) => ['tvs', tvId, 'art', 'current'] as const,
     artMode: (tvId: string) => ['tvs', tvId, 'art-mode'] as const,
 };

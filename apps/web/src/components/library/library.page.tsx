@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Anchor, Badge, Card, Group, SegmentedControl, SimpleGrid, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
 import { IconLayoutGrid, IconList } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
-import { Category, tvApi, type ArtItem } from '../../api/api.client';
+import { Category, isUpload, tvApi, type ArtItem } from '../../api/api.client';
 import { categoryLabel } from '../../api/category.labels';
 import { matteLabel } from '../../api/mattes';
 import { useSelectArt } from '../../api/tv.mutations';
-import { artListOptions, currentArtOptions } from '../../api/tv.queries';
+import { artListOptions, currentArtOptions, hasOriginalOptions } from '../../api/tv.queries';
 import { useTv } from '../../tvs/tv.context';
 import { ErrorAlert } from '../shared/error.alert';
 import { ArtActions } from './art.actions';
@@ -71,6 +71,8 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange, pi
     const onScreen = (item: ArtItem) => current.data?.contentId === item.contentId;
     const show = (item: ArtItem) => selectArt.mutate({ contentId: item.contentId, category: item.categoryId });
     const open = art.data?.find(item => item.contentId === piece);
+    // Only uploads can have one, so the Art Store's pieces skip the question.
+    const hasOriginal = useQuery({ ...hasOriginalOptions(tv.id, open?.contentId ?? ''), enabled: open !== undefined && isUpload(open) });
     const actions = (item: ArtItem) => (
         <ArtActions
             item={item}
@@ -166,6 +168,7 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange, pi
                     item={open}
                     items={art.data}
                     thumbnailUrl={tvApi(tv.id).thumbnailUrl(open.contentId)}
+                    originalUrl={hasOriginal.data ? tvApi(tv.id).originalUrl(open.contentId) : undefined}
                     onScreen={onScreen(open)}
                     onNavigate={onPieceChange}
                     onClose={() => onPieceChange(undefined)}

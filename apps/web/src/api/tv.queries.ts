@@ -13,5 +13,9 @@ export const currentArtOptions = (tvId: string) => queryOptions({ queryKey: quer
 
 export const artModeOptions = (tvId: string) => queryOptions({ queryKey: queryKeys.artMode(tvId), queryFn: () => tvApi(tvId).artMode() });
 
+/** A content id names one image for good, so whether its original is kept doesn't change while it exists. */
+export const hasOriginalOptions = (tvId: string, contentId: string) =>
+    queryOptions({ queryKey: queryKeys.hasOriginal(tvId, contentId), queryFn: () => tvApi(tvId).hasOriginal(contentId), staleTime: Infinity });
+
 export const artListOptions = (tvId: string, category?: string) =>
     queryOptions({ queryKey: queryKeys.art(tvId, category), queryFn: () => tvApi(tvId).listArt(category) });

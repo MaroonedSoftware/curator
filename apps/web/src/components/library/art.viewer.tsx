@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ActionIcon, Badge, Button, Group, Image, Modal, Stack, Table, Text } from '@mantine/core';
-import { IconChevronLeft, IconChevronRight, IconFrame, IconPlayerPlay, IconTrash } from '@tabler/icons-react';
+import { IconChevronLeft, IconChevronRight, IconDownload, IconFrame, IconPlayerPlay, IconTrash } from '@tabler/icons-react';
 import { isUpload, type ArtItem } from '../../api/api.client';
 import { artDetails } from '../../api/art.details';
 import { matteLabel } from '../../api/mattes';
@@ -11,6 +11,8 @@ interface ArtViewerProps {
     /** The pieces ← and → step through: the current filter, in order. */
     items: ArtItem[];
     thumbnailUrl: string;
+    /** Set when curator kept the piece's original, which is then shown instead of the thumbnail and offered for download. */
+    originalUrl?: string;
     onScreen: boolean;
     onNavigate: (contentId: string) => void;
     onClose: () => void;
@@ -19,11 +21,25 @@ interface ArtViewerProps {
     onDelete: () => void;
 }
 
-/** The TV's thumbnails are small (384×216 on a 2025 Frame), so it is shown at up to twice that, not stretched to fill the screen. */
+/**
+ * The TV's thumbnails are small (384×216 on a 2025 Frame), so a piece is shown at up to twice that, not stretched to fill
+ * the screen. A kept original is scaled down to the same box.
+ */
 const MAX_IMAGE_WIDTH = 768;
 
 /** One piece, larger, with what the TV knows about it and what can be done to it. */
-export function ArtViewer({ item, items, thumbnailUrl, onScreen, onNavigate, onClose, onShow, onChangeMatte, onDelete }: ArtViewerProps) {
+export function ArtViewer({
+    item,
+    items,
+    thumbnailUrl,
+    originalUrl,
+    onScreen,
+    onNavigate,
+    onClose,
+    onShow,
+    onChangeMatte,
+    onDelete,
+}: ArtViewerProps) {
     const index = items.findIndex(candidate => candidate.contentId === item.contentId);
     const previous = index > 0 ? items[index - 1] : undefined;
     const next = index >= 0 && index < items.length - 1 ? items[index + 1] : undefined;
@@ -69,7 +85,16 @@ export function ArtViewer({ item, items, thumbnailUrl, onScreen, onNavigate, onC
                     >
                         <IconChevronLeft />
                     </ActionIcon>
-                    <Image src={thumbnailUrl} alt={item.contentId} fit="contain" maw={MAX_IMAGE_WIDTH} mah="60vh" mx="auto" radius="sm" bg="dark.6" />
+                    <Image
+                        src={originalUrl ?? thumbnailUrl}
+                        alt={item.contentId}
+                        fit="contain"
+                        maw={MAX_IMAGE_WIDTH}
+                        mah="60vh"
+                        mx="auto"
+                        radius="sm"
+                        bg="dark.6"
+                    />
                     <ActionIcon
                         variant="subtle"
                         size="lg"
@@ -121,6 +146,11 @@ export function ArtViewer({ item, items, thumbnailUrl, onScreen, onNavigate, onC
                 </Table>
 
                 <Group justify="flex-end">
+                    {originalUrl && (
+                        <Button component="a" href={originalUrl} download variant="subtle" leftSection={<IconDownload size={16} />}>
+                            Download
+                        </Button>
+                    )}
                     {isUpload(item) && (
                         <Button variant="subtle" color="red" leftSection={<IconTrash size={16} />} onClick={onDelete}>
                             Delete
