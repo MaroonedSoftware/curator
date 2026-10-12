@@ -21,6 +21,8 @@ export interface FakeTvOptions {
     replyDelayMs?: number;
     /** Issue this (refreshed) token on the art channel's ms.channel.connect. */
     artToken?: string;
+    /** The name REST device info reports, exactly as sent (real TVs HTML-escape it). */
+    deviceName?: string;
 }
 
 export class FakeTv {
@@ -53,7 +55,11 @@ export class FakeTv {
         this.server = http.createServer((req, res) => {
             if (req.url === '/api/v2/') {
                 res.setHeader('content-type', 'application/json');
-                res.end(JSON.stringify({ device: { modelName: 'QN55LS03DAFXZA', name: 'Fake Frame', FrameTVSupport: 'true', PowerState: 'on' } }));
+                res.end(
+                    JSON.stringify({
+                        device: { modelName: 'QN55LS03DAFXZA', name: this.opts.deviceName ?? 'Fake Frame', FrameTVSupport: 'true', PowerState: 'on' },
+                    }),
+                );
             } else {
                 res.statusCode = 404;
                 res.end();

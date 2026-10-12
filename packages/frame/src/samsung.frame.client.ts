@@ -30,6 +30,7 @@ import type { TokenStore } from './token.store.js';
 import { MemoryTokenStore } from './token.store.js';
 import type { ArtItem, DeviceInfo, FrameClient, UploadOptions } from './frame.client.js';
 import { FrameConnectionError, FrameError, FrameRequestError, FrameTimeoutError, FrameUnauthorizedError } from './errors.js';
+import { decodeHtmlEntities } from './html.entities.js';
 
 const ART_ENDPOINT = 'com.samsung.art-app';
 const REMOTE_ENDPOINT = 'samsung.remote.control';
@@ -116,7 +117,8 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
         const device = (raw.device ?? {}) as Record<string, unknown>;
         return {
             model: device.modelName as string | undefined,
-            name: device.name as string | undefined,
+            // The REST API HTML-escapes the name its owner typed: `50&quot; The Frame`.
+            name: typeof device.name === 'string' ? decodeHtmlEntities(device.name) : undefined,
             frameTvSupport: device.FrameTVSupport === 'true',
             powerOn: device.PowerState === undefined ? true : device.PowerState === 'on',
             raw,

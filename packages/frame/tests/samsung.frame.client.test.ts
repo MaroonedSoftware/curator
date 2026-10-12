@@ -46,6 +46,14 @@ describe('SamsungFrameClient against a fake TV', () => {
         expect(info).toMatchObject({ model: 'QN55LS03DAFXZA', frameTvSupport: true, powerOn: true });
     });
 
+    it('decodes the HTML entities the TV leaves in its name', async () => {
+        await client.close();
+        await tv.stop();
+        await setup({ deviceName: '50&quot; The Frame &amp; more' });
+
+        expect((await client.deviceInfo()).name).toBe('50" The Frame & more');
+    });
+
     it('pairs once and stores the token', async () => {
         const store = new MemoryTokenStore();
         await client.close();
