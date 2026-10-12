@@ -1,5 +1,6 @@
 import type { ServerKitRoutes } from '@maroonedsoftware/fastify';
 import { HealthRoutes } from './health.routes.js';
+import { TvRoutes } from './tv.routes.js';
 
 /** Every route plugin, in registration order. */
-export const routes: ServerKitRoutes[] = [HealthRoutes];
+export const routes: ServerKitRoutes[] = [HealthRoutes, TvRoutes];

@@ -5,3 +5,13 @@ server:
     port: 14100
     # Browser origins allowed by CORS, comma-separated.
     corsOrigins: http://localhost:14102
+
+tv:
+    # The Frame's LAN address. Set it in appconfig.local.yaml, or export CURATOR_TV_HOST.
+    host: ${env:CURATOR_TV_HOST}
+    port: 8002
+    name: Curator
+    # The pairing token, written after you accept the prompt on the TV. Relative to apps/api.
+    tokenFile: .data/tv-token.txt
+    # Log every frame on the wire.
+    debug: false

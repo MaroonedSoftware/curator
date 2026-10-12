@@ -1,20 +1,22 @@
 import 'reflect-metadata';
 import type { AppConfig } from '@maroonedsoftware/appconfig';
 import { ConsoleLogger, type Logger } from '@maroonedsoftware/logger';
-import { ServerKitServerBuilder } from '@maroonedsoftware/fastify';
+import { ServerKitServerBuilder, type ServerKitModule } from '@maroonedsoftware/fastify';
 import type { Container } from 'injectkit';
-import { modules } from '../modules/modules.js';
+import { modules as defaultModules } from '../modules/modules.js';
 import { routes } from '../routes/routes.js';
 import { parseApiConfig } from './api.config.js';
 import { setupPlugins } from './setup.plugins.js';
 
 /**
  * Builds the server without listening: the container, the plugin stack and the routes. Tests use
- * this directly and drive it through `builder.app.inject()`.
+ * this directly and drive it through `builder.app.inject()`, appending a module to `modules` to
+ * replace a registration (the TV, say) with a fake.
  */
 export const buildServer = async (
     config: AppConfig,
     logger: Logger = new ConsoleLogger(),
+    modules: ServerKitModule[] = defaultModules,
 ): Promise<{ builder: ServerKitServerBuilder; container: Container }> => {
     const apiConfig = parseApiConfig(config);
     const builder = new ServerKitServerBuilder();
