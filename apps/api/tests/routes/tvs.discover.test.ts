@@ -64,6 +64,24 @@ describe('GET /tvs/discover', () => {
         expect(response.json()).toEqual({ items: [] });
     });
 
+    it('gives up on a responder that answers SSDP but not REST', async () => {
+        await server.close();
+        server = await createTestServer(import.meta.url, { discovery: { identifyTimeoutMs: 500 } });
+        server.ssdp.responses = [answerFrom('192.168.1.178'), answerFrom('192.168.1.56')];
+        server.prepareTvs(client => {
+            if (server.built.length === 0) {
+                client.deviceInfo = () => new Promise(() => {});
+            }
+        });
+        const started = Date.now();
+
+        const response = await server.app.inject({ method: 'GET', url: '/tvs/discover' });
+
+        expect(response.json().items.map((tv: { host: string }) => tv.host)).toEqual(['192.168.1.56']);
+        expect(Date.now() - started).toBeLessThan(2000);
+        expect(server.built[0]?.closed).toBe(true);
+    });
+
     it('answers an empty list when nothing is on the network', async () => {
         const response = await server.app.inject({ method: 'GET', url: '/tvs/discover' });
 

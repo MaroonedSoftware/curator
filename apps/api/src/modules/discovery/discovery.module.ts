@@ -20,6 +20,7 @@ export const DiscoveryModule: ServerKitModule = {
                         container.get(FrameClientFactoryToken),
                         container.get(TvRepository),
                         discovery.timeoutMs,
+                        discovery.identifyTimeoutMs,
                     ),
             )
             .asSingleton();

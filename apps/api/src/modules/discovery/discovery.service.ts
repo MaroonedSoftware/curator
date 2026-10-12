@@ -23,11 +23,13 @@ export class DiscoveryService {
         private readonly createClient: FrameClientFactory,
         private readonly tvs: TvRepository,
         private readonly timeoutMs: number,
+        /** How long to wait for one responder's REST info. A device that answers SSDP but not REST would otherwise hold the search for the client's connect timeout. */
+        private readonly identifyTimeoutMs: number,
     ) {}
 
     /**
      * Asks the network for Samsung TVs, then asks each one whether it is a Frame. A responder that
-     * doesn't answer, or isn't a Frame, is left out. Sorted by name.
+     * doesn't answer within `identifyTimeoutMs`, or isn't a Frame, is left out. Sorted by name.
      */
     async discover(): Promise<DiscoveredTv[]> {
         const responses = await this.search({ searchTargets: SAMSUNG_SEARCH_TARGETS, timeoutMs: this.timeoutMs });
@@ -38,9 +40,13 @@ export class DiscoveryService {
 
     private async identify(host: string): Promise<DiscoveredTv | undefined> {
         const client = this.createClient({ id: `discover:${host}`, host, port: FRAME_PORT }, new MemoryTokenStore());
+        let timer: NodeJS.Timeout | undefined;
         try {
-            const device = await new FrameService(client).deviceInfo();
-            if (!device.frameTvSupport) {
+            const timedOut = new Promise<undefined>(resolve => {
+                timer = setTimeout(() => resolve(undefined), this.identifyTimeoutMs);
+            });
+            const device = await Promise.race([new FrameService(client).deviceInfo(), timedOut]);
+            if (!device?.frameTvSupport) {
                 return undefined;
             }
             const stored = await this.tvs.findByAddress(host, FRAME_PORT);
@@ -48,6 +54,7 @@ export class DiscoveryService {
         } catch {
             return undefined;
         } finally {
+            clearTimeout(timer);
             await client.close();
         }
     }

@@ -35,6 +35,8 @@ const ApiConfigSchema = z.object({
         .object({
             /** How long `GET /tvs/discover` listens for TVs to answer. */
             timeoutMs: z.coerce.number().int().min(500).max(15_000).default(3000),
+            /** How long to wait for each TV that answered to say what it is. */
+            identifyTimeoutMs: z.coerce.number().int().min(500).max(15_000).default(3000),
         })
         .prefault({}),
     tv: z.object({
