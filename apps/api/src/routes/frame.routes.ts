@@ -1,11 +1,11 @@
 import type { ZodTypeProvider } from '@maroonedsoftware/fastify/zod';
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { FrameService } from '../modules/frame/frame.service.js';
+import type { FrameService } from '../modules/frame/frame.service.js';
 
 const Raw = z.record(z.string(), z.unknown());
 
-export const Device = z.object({
+const Device = z.object({
     model: z.string().optional(),
     name: z.string().optional(),
     frameTvSupport: z.boolean(),
@@ -142,17 +142,4 @@ const frameEndpoints: FastifyPluginAsync = async instance => {
         await frameOf(request).setArtMode(request.body.on);
         return reply.status(204).send();
     });
-};
-
-/**
- * The single TV from `tv.*` config, at `/tv`. Superseded by `/tvs/:tvId`; kept until the web app
- * has moved over.
- */
-export const TvRoutes: FastifyPluginAsync = async instance => {
-    const app = instance.withTypeProvider<ZodTypeProvider>();
-    app.get('/tv', { schema: { response: { 200: Device } } }, async request => request.container.get(FrameService).deviceInfo());
-    await app.register(
-        frameRoutes(request => request.container.get(FrameService)),
-        { prefix: '/tv' },
-    );
 };

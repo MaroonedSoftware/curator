@@ -39,18 +39,6 @@ const ApiConfigSchema = z.object({
             identifyTimeoutMs: z.coerce.number().int().min(500).max(15_000).default(3000),
         })
         .prefault({}),
-    tv: z.object({
-        /** The Frame's address on the LAN. Give it a DHCP reservation. */
-        host: z.string().min(1),
-        /** 8002 is the TLS port modern Frames want. */
-        port: port.default(8002),
-        /** Shown on the TV's pairing prompt. */
-        name: z.string().default('Curator'),
-        /** Where the pairing token is kept, relative to apps/api. */
-        tokenFile: z.string().default('.data/tv-token.txt'),
-        /** Log every frame on the wire. Noisy; for chasing protocol trouble. */
-        debug: z.stringbool().or(z.boolean()).default(false),
-    }),
 });
 
 export type ApiConfig = z.infer<typeof ApiConfigSchema>;

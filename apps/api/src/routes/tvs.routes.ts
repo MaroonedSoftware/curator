@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { DiscoveryService } from '../modules/discovery/discovery.service.js';
 import type { TvRow } from '../modules/tvs/tv.repository.js';
 import { TvService } from '../modules/tvs/tv.service.js';
-import { frameRoutes } from './tv.routes.js';
+import { frameRoutes } from './frame.routes.js';
 
 /** A stored TV, as the API shows it. The pairing token never leaves the server. */
 export const Tv = z.object({

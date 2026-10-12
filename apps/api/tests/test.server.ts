@@ -4,8 +4,7 @@ import { ConsoleLogger, type Logger } from '@maroonedsoftware/logger';
 import type { TokenStore } from '@curator/frame';
 import { Kysely } from 'kysely';
 import type { DB } from '../src/modules/data/db.js';
-import { FrameClientFactoryToken, type FrameClientFactory, type TvAddress } from '../src/modules/frame/frame.client.registry.js';
-import { FrameClientToken } from '../src/modules/frame/frame.tokens.js';
+import { FrameClientFactoryToken, FrameClientRegistry, type FrameClientFactory, type TvAddress } from '../src/modules/frame/frame.client.registry.js';
 import type { NewTv, TvRow } from '../src/modules/tvs/tv.repository.js';
 import { SsdpSearchToken, type SsdpResponse, type SsdpSearch } from '../src/modules/discovery/ssdp.search.js';
 import { modules } from '../src/modules/modules.js';
@@ -16,7 +15,7 @@ import { createTestDb, dropTestDb, testDbSettings, uniqueDbName } from './test.d
 /** A logger that drops everything, so test output is only the tests. */
 export const silentLogger: Logger = { error: () => {}, warn: () => {}, info: () => {}, debug: () => {}, trace: () => {} };
 
-/** Config for a test server on database `dbName`. The TV host is never dialled: the client is replaced by a fake. */
+/** Config for a test server on database `dbName`. */
 export const testConfig = (dbName = testDbSettings.bootstrapName, overrides: Record<string, unknown> = {}) =>
     new AppConfig({
         server: { port: 0, corsOrigins: 'http://localhost:14102' },
@@ -27,20 +26,18 @@ export const testConfig = (dbName = testDbSettings.bootstrapName, overrides: Rec
             password: testDbSettings.password,
             name: dbName,
         },
-        tv: { host: '192.0.2.1' },
         ...overrides,
     });
 
 /**
  * Builds the real server without listening, for `app.inject()`, on a fresh database cloned for this
- * test file and with a {@link FakeFrameClient} in place of the TV. `close` runs the module shutdown
+ * test file, with a {@link FakeFrameClient} in place of every TV. `close` runs the module shutdown
  * hooks, as `builder.start`'s shutdown would, and drops the database. TEST_LOG=1 shows the server's
  * own log, which is where a 500's cause is.
  */
 export const createTestServer = async (testFileUrl: string, overrides: Record<string, unknown> = {}) => {
     const dbName = uniqueDbName(testFileUrl);
     await createTestDb(dbName);
-    const tv = new FakeFrameClient();
     /** The fake behind each stored TV, by TV id, built when the API first reaches for that TV. */
     const tvs = new Map<string, { client: FakeFrameClient; address: TvAddress; tokenStore: TokenStore }>();
     /** Every client the factory built, in order, including the short-lived ones `POST /tvs` pairs with. */
@@ -66,8 +63,6 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
     const fakeTv: ServerKitModule = {
         name: 'FakeTv',
         setup: async registry => {
-            registry.remove(FrameClientToken);
-            registry.register(FrameClientToken).useInstance(tv);
             registry.remove(FrameClientFactoryToken);
             registry.register(FrameClientFactoryToken).useInstance(factory);
             registry.remove(SsdpSearchToken);
@@ -102,5 +97,16 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
         return db.insertInto('tvs').values(tv).returningAll().executeTakeFirstOrThrow();
     };
 
-    return { app: builder.app, container, tv, tvs, built, prepareTvs, ssdp, db, addTv, dbName, close };
+    return { app: builder.app, container, tvs, built, prepareTvs, ssdp, db, addTv, dbName, close };
+};
+
+/**
+ * A test server with one stored TV, for exercising that TV's endpoints: `base` is its `/tvs/:tvId`
+ * and `tv` the fake behind it.
+ */
+export const createTvTestServer = async (testFileUrl: string, overrides: Record<string, unknown> = {}) => {
+    const server = await createTestServer(testFileUrl, overrides);
+    const stored = await server.addTv();
+    const tv = server.container.get(FrameClientRegistry).clientFor(stored) as FakeFrameClient;
+    return { ...server, tv, base: `/tvs/${stored.id}` };
 };
