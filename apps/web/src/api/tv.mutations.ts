@@ -31,3 +31,42 @@ export function useSetArtMode() {
         onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.artMode }),
     });
 }
+
+/** Puts an artwork on screen (and the TV into art mode, unless `show` is false). */
+export function useSelectArt() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ contentId, show, category }: { contentId: string; show?: boolean; category?: string }) =>
+            api.selectArt(contentId, { show, category }),
+        onError: notifyFailure,
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.currentArt });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.artMode });
+        },
+    });
+}
+
+export function useDeleteArt() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (contentId: string) => api.deleteArt(contentId),
+        onError: notifyFailure,
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.allArt });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.currentArt });
+        },
+    });
+}
+
+export function useChangeMatte() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ contentId, matte, portraitMatte }: { contentId: string; matte: string; portraitMatte?: string }) =>
+            api.changeMatte(contentId, matte, portraitMatte),
+        onError: notifyFailure,
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.allArt });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.currentArt });
+        },
+    });
+}

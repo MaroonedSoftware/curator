@@ -11,3 +11,5 @@ export const apiVersionOptions = () => queryOptions({ queryKey: queryKeys.apiVer
 export const currentArtOptions = () => queryOptions({ queryKey: queryKeys.currentArt, queryFn: api.currentArt });
 
 export const artModeOptions = () => queryOptions({ queryKey: queryKeys.artMode, queryFn: api.artMode });
+
+export const artListOptions = (category?: string) => queryOptions({ queryKey: queryKeys.art(category), queryFn: () => api.listArt(category) });
