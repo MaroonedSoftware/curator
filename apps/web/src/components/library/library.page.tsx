@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Card, Group, SegmentedControl, SimpleGrid, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
+import { Anchor, Badge, Card, Group, SegmentedControl, SimpleGrid, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
 import { IconLayoutGrid, IconList } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { Category, tvApi, type ArtItem } from '../../api/api.client';
@@ -11,6 +11,7 @@ import { useTv } from '../../tvs/tv.context';
 import { ErrorAlert } from '../shared/error.alert';
 import { ArtActions } from './art.actions';
 import { ArtThumbnail } from './art.thumbnail';
+import { ArtViewer } from './art.viewer';
 import { CategoryLabels } from './category.labels';
 import { DeleteModal } from './delete.modal';
 import { MatteModal } from './matte.modal';
@@ -54,10 +55,13 @@ interface LibraryPageProps {
     onCategoryChange: (category: string) => void;
     view: LibraryView;
     onViewChange: (view: LibraryView) => void;
+    /** The piece open in the viewer, if any. */
+    piece?: string;
+    onPieceChange: (piece: string | undefined) => void;
 }
 
 /** The TV's artwork, by category, as thumbnails or a list, with what can be done to each piece. */
-export function LibraryPage({ category, onCategoryChange, view, onViewChange }: LibraryPageProps) {
+export function LibraryPage({ category, onCategoryChange, view, onViewChange, piece, onPieceChange }: LibraryPageProps) {
     const tv = useTv();
     const art = useQuery(artListOptions(tv.id, category === ALL ? undefined : category));
     const current = useQuery(currentArtOptions(tv.id));
@@ -65,10 +69,12 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange }: 
     const [dialog, setDialog] = useState<Dialog>();
 
     const onScreen = (item: ArtItem) => current.data?.contentId === item.contentId;
+    const show = (item: ArtItem) => selectArt.mutate({ contentId: item.contentId, category: item.categoryId });
+    const open = art.data?.find(item => item.contentId === piece);
     const actions = (item: ArtItem) => (
         <ArtActions
             item={item}
-            onShow={() => selectArt.mutate({ contentId: item.contentId, category: item.categoryId })}
+            onShow={() => show(item)}
             onChangeMatte={() => setDialog({ kind: 'matte', item })}
             onDelete={() => setDialog({ kind: 'delete', item })}
         />
@@ -98,7 +104,11 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange }: 
                     {art.data.map(item => (
                         <Card key={item.contentId} withBorder padding="xs" data-testid="art-card">
                             <Card.Section>
-                                <ArtThumbnail src={tvApi(tv.id).thumbnailUrl(item.contentId)} alt={item.contentId} />
+                                <ArtThumbnail
+                                    src={tvApi(tv.id).thumbnailUrl(item.contentId)}
+                                    alt={item.contentId}
+                                    onOpen={() => onPieceChange(item.contentId)}
+                                />
                             </Card.Section>
                             <Group justify="space-between" wrap="nowrap" mt="xs" gap="xs">
                                 <Stack gap={0} style={{ minWidth: 0 }}>
@@ -134,7 +144,9 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange }: 
                             <Table.Tr key={item.contentId}>
                                 <Table.Td>
                                     <Group gap="xs">
-                                        <Text ff="monospace">{item.contentId}</Text>
+                                        <Anchor component="button" ff="monospace" c="inherit" onClick={() => onPieceChange(item.contentId)}>
+                                            {item.contentId}
+                                        </Anchor>
                                         {onScreen(item) && onScreenBadge}
                                     </Group>
                                 </Table.Td>
@@ -149,6 +161,23 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange }: 
                 </Table>
             )}
 
+            {open && art.data && (
+                <ArtViewer
+                    item={open}
+                    items={art.data}
+                    thumbnailUrl={tvApi(tv.id).thumbnailUrl(open.contentId)}
+                    onScreen={onScreen(open)}
+                    onNavigate={onPieceChange}
+                    onClose={() => onPieceChange(undefined)}
+                    onShow={() => show(open)}
+                    onChangeMatte={() => setDialog({ kind: 'matte', item: open })}
+                    onDelete={() => {
+                        // The piece is about to be gone, so the viewer closes rather than showing it.
+                        onPieceChange(undefined);
+                        setDialog({ kind: 'delete', item: open });
+                    }}
+                />
+            )}
             {dialog?.kind === 'matte' && <MatteModal item={dialog.item} onClose={() => setDialog(undefined)} />}
             {dialog?.kind === 'delete' && <DeleteModal item={dialog.item} onClose={() => setDialog(undefined)} />}
         </Stack>

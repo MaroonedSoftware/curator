@@ -33,6 +33,11 @@ the lists the reference library documents; a matte that doesn't fit the image is
 
 Thumbnails load lazily from the API, which batches and caches them; a piece the TV has no thumbnail for shows a placeholder.
 
+Clicking a thumbnail (or a content id in the list) opens the piece in a viewer: the image, its
+categories, mattes, original size and date, and its actions. ← and → step through the current
+filter and Esc closes it; the open piece is in the URL (`?piece=`), so Back closes it too. The TV
+only gives thumbnails (384×216 on a 2025 Frame), so the viewer shows them at up to twice that.
+
 ## Layout
 
 ```

@@ -223,6 +223,91 @@ describe('library', () => {
         expect(await screen.findByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
     });
 
+    it('expands a piece when its thumbnail is clicked, with its details and actions', async () => {
+        fakeTv([
+            { ...upload, raw: { ...upload.raw, portrait_matte_id: 'shadowbox_black', width: 3840, height: 2160, image_date: '2026:03:17 13:29:37' } },
+            store,
+        ]);
+        const user = setupUser();
+
+        const { router } = renderApp(`${TV_BASE}/library`);
+        await user.click(await screen.findByRole('button', { name: 'Expand MY-F0001' }));
+
+        const viewer = await screen.findByRole('dialog');
+        expect(within(viewer).getByRole('img', { name: 'MY-F0001' })).toHaveAttribute('src', `/api${TV_BASE}/art/MY-F0001/thumbnail`);
+        expect(within(viewer).getByText('3840 × 2160')).toBeInTheDocument();
+        expect(within(viewer).getByText(/Shadowbox, polar · portrait: Shadowbox, black/)).toBeInTheDocument();
+        expect(within(viewer).getByText('1 of 2')).toBeInTheDocument();
+        expect(within(viewer).getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+        expect(router.state.location.search).toEqual({ piece: 'MY-F0001' });
+    });
+
+    it('steps through pieces with the arrow keys and buttons, and closes with Escape', async () => {
+        fakeTv();
+        const user = setupUser();
+
+        const { router } = renderApp(`${TV_BASE}/library?piece=MY-F0001`);
+        const viewer = await screen.findByRole('dialog');
+        expect(within(viewer).getByRole('button', { name: 'Previous piece' })).toBeDisabled();
+
+        await user.keyboard('{ArrowRight}');
+        await waitFor(() => expect(router.state.location.search).toEqual({ piece: 'SAM-S0001' }));
+        expect(await within(await screen.findByRole('dialog')).findByText('2 of 2')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Next piece' })).toBeDisabled();
+        // SAM-S0001 is on screen and isn't an upload.
+        expect(screen.getByRole('button', { name: 'On screen' })).toBeDisabled();
+        expect(within(screen.getByRole('dialog')).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'Previous piece' }));
+        await waitFor(() => expect(router.state.location.search).toEqual({ piece: 'MY-F0001' }));
+
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(router.state.location.search).toEqual({});
+    });
+
+    it('shows the piece on the TV from the viewer', async () => {
+        const { requests } = fakeTv();
+        const user = setupUser();
+
+        renderApp(`${TV_BASE}/library?piece=MY-F0001`);
+        await user.click(await within(await screen.findByRole('dialog')).findByRole('button', { name: 'Show on TV' }));
+
+        await waitFor(() => expect(writes(requests)).toEqual([expect.objectContaining({ body: { contentId: 'MY-F0001', category: 'MY-C0002' } })]));
+        expect(await screen.findByRole('button', { name: 'On screen' })).toBeDisabled();
+    });
+
+    it('closes the viewer and asks before deleting from it', async () => {
+        const { requests } = fakeTv();
+        const user = setupUser();
+
+        const { router } = renderApp(`${TV_BASE}/library?piece=MY-F0001`);
+        await user.click(await within(await screen.findByRole('dialog')).findByRole('button', { name: 'Delete' }));
+
+        expect(await screen.findByText('Delete from Living Room?')).toBeInTheDocument();
+        expect(router.state.location.search).toEqual({});
+        expect(writes(requests)).toEqual([]);
+    });
+
+    it('opens the viewer from the list too', async () => {
+        fakeTv();
+        const user = setupUser();
+
+        renderApp(`${TV_BASE}/library?view=list`);
+        await user.click(await screen.findByRole('button', { name: 'MY-F0001' }));
+
+        expect(await within(await screen.findByRole('dialog')).findByRole('img', { name: 'MY-F0001' })).toBeInTheDocument();
+    });
+
+    it('opens nothing for a piece the TV doesn’t have', async () => {
+        fakeTv();
+
+        renderApp(`${TV_BASE}/library?piece=MY-F9999`);
+
+        expect(await screen.findByRole('button', { name: 'Expand MY-F0001' })).toBeInTheDocument();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
     it('says so when a category is empty', async () => {
         fakeTv([store]);
 
