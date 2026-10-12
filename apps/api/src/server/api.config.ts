@@ -31,6 +31,8 @@ const ApiConfigSchema = z.object({
             debug: z.stringbool().or(z.boolean()).default(false),
             /** Memory for thumbnails across every TV. A thumbnail is tens of kilobytes. */
             thumbnailCacheMegabytes: z.coerce.number().int().min(1).max(4096).default(64),
+            /** Where uploaded images are kept, since the TV can't give them back. Relative to apps/api. */
+            originalsDir: z.string().min(1).default('.data/originals'),
         })
         .prefault({}),
     discovery: z

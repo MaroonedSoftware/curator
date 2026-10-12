@@ -3,6 +3,9 @@ import type { ServerKitModule } from '@maroonedsoftware/fastify';
 import { ConsoleLogger, type Logger } from '@maroonedsoftware/logger';
 import type { TokenStore } from '@curator/frame';
 import { Kysely } from 'kysely';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { DB } from '../src/modules/data/db.js';
 import { FrameClientFactoryToken, FrameClientRegistry, type FrameClientFactory, type TvAddress } from '../src/modules/frame/frame.client.registry.js';
 import type { NewTv, TvRow } from '../src/modules/tvs/tv.repository.js';
@@ -31,13 +34,15 @@ export const testConfig = (dbName = testDbSettings.bootstrapName, overrides: Rec
 
 /**
  * Builds the real server without listening, for `app.inject()`, on a fresh database cloned for this
- * test file, with a {@link FakeFrameClient} in place of every TV. `close` runs the module shutdown
- * hooks, as `builder.start`'s shutdown would, and drops the database. TEST_LOG=1 shows the server's
- * own log, which is where a 500's cause is.
+ * test file, with a {@link FakeFrameClient} in place of every TV and uploads kept in a temporary
+ * `originalsDir`. `close` runs the module shutdown hooks, as `builder.start`'s shutdown would, drops
+ * the database and removes the originals. TEST_LOG=1 shows the server's own log, which is where a
+ * 500's cause is.
  */
 export const createTestServer = async (testFileUrl: string, overrides: Record<string, unknown> = {}) => {
     const dbName = uniqueDbName(testFileUrl);
     await createTestDb(dbName);
+    const originalsDir = await mkdtemp(join(tmpdir(), 'curator-originals-'));
     /** The fake behind each stored TV, by TV id, built when the API first reaches for that TV. */
     const tvs = new Map<string, { client: FakeFrameClient; address: TvAddress; tokenStore: TokenStore }>();
     /** Every client the factory built, in order, including the short-lived ones `POST /tvs` pairs with. */
@@ -71,7 +76,7 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
     };
     const testModules = [...modules, fakeTv];
     const { builder, container } = await buildServer(
-        testConfig(dbName, overrides),
+        testConfig(dbName, { ...overrides, frame: { originalsDir, ...(overrides.frame as object | undefined) } }),
         process.env.TEST_LOG ? new ConsoleLogger() : silentLogger,
         testModules,
     );
@@ -83,6 +88,7 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
             await module.shutdown?.(container);
         }
         await dropTestDb(dbName);
+        await rm(originalsDir, { recursive: true, force: true });
     };
     const db: Kysely<DB> = container.get(Kysely<DB>);
     /** Stores a TV directly, as if it had been paired. */
@@ -97,7 +103,7 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
         return db.insertInto('tvs').values(tv).returningAll().executeTakeFirstOrThrow();
     };
 
-    return { app: builder.app, container, tvs, built, prepareTvs, ssdp, db, addTv, dbName, close };
+    return { app: builder.app, container, tvs, built, prepareTvs, ssdp, db, addTv, dbName, originalsDir, close };
 };
 
 /**
@@ -108,5 +114,5 @@ export const createTvTestServer = async (testFileUrl: string, overrides: Record<
     const server = await createTestServer(testFileUrl, overrides);
     const stored = await server.addTv();
     const tv = server.container.get(FrameClientRegistry).clientFor(stored) as FakeFrameClient;
-    return { ...server, tv, base: `/tvs/${stored.id}` };
+    return { ...server, tv, tvId: stored.id, base: `/tvs/${stored.id}` };
 };

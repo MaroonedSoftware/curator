@@ -1,4 +1,6 @@
 import { FrameConnectionError, FrameError, FrameRequestError, FrameTimeoutError, FrameUnauthorizedError } from '@curator/frame';
+import { readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createTvTestServer } from '../test.server.js';
 
@@ -334,6 +336,77 @@ describe('uploading to a TV', () => {
         });
 
         expect(response.statusCode).toBe(504);
+    });
+});
+
+describe('keeping uploaded originals', () => {
+    let server: Awaited<ReturnType<typeof createTvTestServer>>;
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
+    const tvDir = () => join(server.originalsDir, server.tvId);
+    const exists = (path: string) =>
+        stat(path).then(
+            () => true,
+            () => false,
+        );
+    const upload = async () => {
+        const response = await server.app.inject({
+            method: 'POST',
+            url: `${server.base}/art`,
+            headers: { 'content-type': 'image/jpeg' },
+            payload: jpeg,
+        });
+        expect(response.statusCode).toBe(201);
+        return response.json().contentId as string;
+    };
+
+    beforeAll(async () => {
+        server = await createTvTestServer(import.meta.url);
+    });
+
+    afterAll(async () => {
+        await server.close();
+    });
+
+    it('POST …/art keeps the image on disk under the TV', async () => {
+        const contentId = await upload();
+
+        expect(await readFile(join(tvDir(), `${contentId}.jpg`))).toEqual(jpeg);
+    });
+
+    it('DELETE …/art/:contentId deletes the kept original too', async () => {
+        const contentId = await upload();
+
+        const response = await server.app.inject({ method: 'DELETE', url: `${server.base}/art/${contentId}` });
+
+        expect(response.statusCode).toBe(204);
+        expect(await exists(join(tvDir(), `${contentId}.jpg`))).toBe(false);
+    });
+
+    it('POST …/art still answers the content id when the original cannot be kept', async () => {
+        // A file where the TV's directory belongs makes every write fail.
+        await rm(tvDir(), { recursive: true, force: true });
+        await writeFile(tvDir(), '');
+        try {
+            const response = await server.app.inject({
+                method: 'POST',
+                url: `${server.base}/art`,
+                headers: { 'content-type': 'image/jpeg' },
+                payload: jpeg,
+            });
+
+            expect(response.statusCode).toBe(201);
+            expect(response.json().contentId).toMatch(/^MY-F/);
+        } finally {
+            await rm(tvDir(), { force: true });
+        }
+    });
+
+    it('DELETE /tvs/:tvId leaves the TV’s originals in place', async () => {
+        const contentId = await upload();
+
+        expect((await server.app.inject({ method: 'DELETE', url: `/tvs/${server.tvId}` })).statusCode).toBe(204);
+
+        expect(await exists(join(tvDir(), `${contentId}.jpg`))).toBe(true);
     });
 });
 

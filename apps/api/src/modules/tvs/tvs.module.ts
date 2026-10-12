@@ -1,10 +1,13 @@
+import { resolve } from 'node:path';
 import { SamsungFrameClient } from '@curator/frame';
 import type { ServerKitModule } from '@maroonedsoftware/fastify';
 import { Logger } from '@maroonedsoftware/logger';
 import { Kysely } from 'kysely';
 import { parseApiConfig } from '../../server/api.config.js';
+import { API_ROOT } from '../../server/load.config.js';
 import type { DB } from '../data/db.js';
 import { FrameClientFactoryToken, FrameClientRegistry, type FrameClientFactory } from '../frame/frame.client.registry.js';
+import { OriginalStore } from '../frame/original.store.js';
 import { ThumbnailCache } from '../frame/thumbnail.cache.js';
 import { DbTokenStore } from './db.token.store.js';
 import { TvRepository } from './tv.repository.js';
@@ -58,9 +61,21 @@ export const TvsModule: ServerKitModule = {
             .asSingleton();
 
         registry
+            .register(OriginalStore)
+            .useFactory(() => new OriginalStore(resolve(API_ROOT, frame.originalsDir)))
+            .asSingleton();
+
+        registry
             .register(TvService)
             .useFactory(
-                container => new TvService(container.get(TvRepository), container.get(FrameClientRegistry), container.get(FrameClientFactoryToken)),
+                container =>
+                    new TvService(
+                        container.get(TvRepository),
+                        container.get(FrameClientRegistry),
+                        container.get(FrameClientFactoryToken),
+                        container.get(OriginalStore),
+                        container.get(Logger),
+                    ),
             )
             .asSingleton();
     },

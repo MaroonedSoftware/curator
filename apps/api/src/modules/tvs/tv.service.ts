@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { MemoryTokenStore } from '@curator/frame';
 import { httpError } from '@maroonedsoftware/errors';
+import type { Logger } from '@maroonedsoftware/logger';
 import { FrameService } from '../frame/frame.service.js';
 import type { FrameClientFactory, FrameClientRegistry } from '../frame/frame.client.registry.js';
+import type { OriginalStore } from '../frame/original.store.js';
 import type { TvRepository, TvRow } from './tv.repository.js';
 
 export interface ConnectTv {
@@ -21,6 +23,8 @@ export class TvService {
         private readonly tvs: TvRepository,
         private readonly clients: FrameClientRegistry,
         private readonly createClient: FrameClientFactory,
+        private readonly originals: OriginalStore,
+        private readonly logger: Logger,
     ) {}
 
     /**
@@ -79,7 +83,10 @@ export class TvService {
         return this.tvs.rename(id, name);
     }
 
-    /** Forgets the TV and drops its connection. The TV itself keeps its art. Resolves false if there was no such TV. */
+    /**
+     * Forgets the TV and drops its connection. The TV itself keeps its art, and its kept originals stay
+     * on disk as a backup. Resolves false if there was no such TV.
+     */
     async remove(id: string): Promise<boolean> {
         const removed = await this.tvs.delete(id);
         await this.clients.remove(id);
@@ -89,6 +96,9 @@ export class TvService {
     /** The TV's own endpoints, through its client. 404 for a TV that isn't there. */
     async frameFor(id: string): Promise<FrameService> {
         const tv = await this.tvs.get(id);
-        return new FrameService(this.clients.clientFor(tv), this.clients.thumbnailsFor(tv));
+        return new FrameService(this.clients.clientFor(tv), this.clients.thumbnailsFor(tv), {
+            store: this.originals.forTv(tv.id),
+            logger: this.logger,
+        });
     }
 }

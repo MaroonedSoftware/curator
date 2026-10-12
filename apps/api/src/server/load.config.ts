@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 /** apps/api, whether this runs from src/server or dist/server. */
-const API_ROOT = fileURLToPath(new URL('../../', import.meta.url));
+export const API_ROOT = fileURLToPath(new URL('../../', import.meta.url));
 
 /** NODE_ENV names a file, so only a plain lowercase word is accepted. */
 const ENVIRONMENT_NAME = /^[a-z][a-z0-9]*$/;

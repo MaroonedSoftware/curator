@@ -1,5 +1,7 @@
 import type { ArtItem, DeviceInfo, FrameClient, Thumbnail, UploadOptions } from '@curator/frame';
 import { httpError } from '@maroonedsoftware/errors';
+import type { Logger } from '@maroonedsoftware/logger';
+import type { TvOriginals } from './original.store.js';
 import type { ThumbnailBatcher } from './thumbnail.batcher.js';
 import { toHttpError } from './frame.http.errors.js';
 
@@ -34,6 +36,12 @@ export interface CurrentArt {
     raw: Record<string, unknown>;
 }
 
+/** Where a TV's uploads are kept, and where to report a failure to keep one. */
+export interface KeptOriginals {
+    store: TvOriginals;
+    logger: Logger;
+}
+
 const optionalString = (value: unknown): string | undefined => (typeof value === 'string' && value.length > 0 ? value : undefined);
 
 /**
@@ -45,6 +53,8 @@ export class FrameService {
         private readonly client: FrameClient,
         /** Absent for a short-lived client, such as the one `POST /tvs` pairs with. */
         private readonly thumbnails?: ThumbnailBatcher,
+        /** Absent for the same short-lived clients: they never upload. */
+        private readonly originals?: KeptOriginals,
     ) {}
 
     /** A piece's thumbnail. 404 when the TV has none for it. */
@@ -80,9 +90,19 @@ export class FrameService {
         return this.call(() => this.client.getArtMode());
     }
 
-    /** Resolves with the TV-assigned content id once the TV announces the image. */
-    upload(image: Buffer, opts: UploadOptions): Promise<string> {
-        return this.call(() => this.client.upload(image, opts));
+    /**
+     * Resolves with the TV-assigned content id once the TV announces the image, and keeps the image
+     * on disk. Failing to keep it is only logged: the TV has the image by then, so an error would
+     * invite a retry that puts a second copy on the TV.
+     */
+    async upload(image: Buffer, opts: UploadOptions & Required<Pick<UploadOptions, 'fileType'>>): Promise<string> {
+        const contentId = await this.call(() => this.client.upload(image, opts));
+        try {
+            await this.originals?.store.save(contentId, opts.fileType, image);
+        } catch (error) {
+            this.originals?.logger.error(`could not keep the original of ${contentId}`, error);
+        }
+        return contentId;
     }
 
     // The writes below are fire-and-forget on the TV's side: they resolve once the request is
@@ -92,8 +112,14 @@ export class FrameService {
         return this.call(() => this.client.select(contentId, opts));
     }
 
-    delete(contentId: string): Promise<void> {
-        return this.call(() => this.client.delete(contentId));
+    /** Deletes the piece from the TV, then its kept original. Failing the latter is only logged. */
+    async delete(contentId: string): Promise<void> {
+        await this.call(() => this.client.delete(contentId));
+        try {
+            await this.originals?.store.delete(contentId);
+        } catch (error) {
+            this.originals?.logger.error(`could not delete the original of ${contentId}`, error);
+        }
     }
 
     changeMatte(contentId: string, matte: string, portraitMatte?: string): Promise<void> {

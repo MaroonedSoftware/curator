@@ -16,5 +16,6 @@ database:
 
 # TVs live in the database: add them in the web app (TVs page) or with POST /tvs.
 # frame:
-#     clientName: Curator   # shown on a TV's pairing prompt
-#     debug: false          # log every frame on the wire, for every TV
+#     clientName: Curator            # shown on a TV's pairing prompt
+#     debug: false                   # log every frame on the wire, for every TV
+#     originalsDir: .data/originals  # uploaded images, kept per TV; relative to apps/api
