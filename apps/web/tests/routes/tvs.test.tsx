@@ -61,8 +61,9 @@ describe('TVs page', () => {
 
         renderApp('/tvs');
 
-        expect(await screen.findByText('Living Room')).toBeInTheDocument();
-        expect(screen.getByText('192.168.1.50:8002')).toBeInTheDocument();
+        const main = await screen.findByRole('main');
+        expect(await within(main).findByText('Living Room')).toBeInTheDocument();
+        expect(within(main).getByText('192.168.1.50:8002')).toBeInTheDocument();
         expect(screen.getByText('Paired')).toBeInTheDocument();
         expect(screen.getByText('Not paired')).toBeInTheDocument();
     });

@@ -3,6 +3,7 @@ import { Button, Group, Modal, Stack, Text } from '@mantine/core';
 import type { ArtItem } from '../../api/api.client';
 import { NO_MATTE } from '../../api/mattes';
 import { useChangeMatte } from '../../api/tv.mutations';
+import { useTv } from '../../tvs/tv.context';
 import { MattePicker } from '../art/matte.picker';
 
 const stringField = (raw: Record<string, unknown>, key: string): string | undefined => (typeof raw[key] === 'string' ? raw[key] : undefined);
@@ -11,7 +12,7 @@ const stringField = (raw: Record<string, unknown>, key: string): string | undefi
 export function MatteModal({ item, onClose }: { item: ArtItem; onClose: () => void }) {
     const [matte, setMatte] = useState(stringField(item.raw, 'matte_id') ?? NO_MATTE);
     const [portraitMatte, setPortraitMatte] = useState(stringField(item.raw, 'portrait_matte_id') ?? NO_MATTE);
-    const changeMatte = useChangeMatte();
+    const changeMatte = useChangeMatte(useTv().id);
 
     const save = () => changeMatte.mutate({ contentId: item.contentId, matte, portraitMatte }, { onSuccess: onClose });
 

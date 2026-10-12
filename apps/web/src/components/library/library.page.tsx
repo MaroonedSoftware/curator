@@ -7,6 +7,7 @@ import { categoryLabel } from '../../api/category.labels';
 import { matteLabel } from '../../api/mattes';
 import { useSelectArt } from '../../api/tv.mutations';
 import { artListOptions, currentArtOptions } from '../../api/tv.queries';
+import { useTv } from '../../tvs/tv.context';
 import { ErrorAlert } from '../shared/error.alert';
 import { DeleteModal } from './delete.modal';
 import { MatteModal } from './matte.modal';
@@ -26,14 +27,15 @@ type Dialog = { kind: 'matte' | 'delete'; item: ArtItem };
 
 /** The TV's artwork, by category, with what can be done to each piece. */
 export function LibraryPage({ category, onCategoryChange }: { category: string; onCategoryChange: (category: string) => void }) {
-    const art = useQuery(artListOptions(category === ALL ? undefined : category));
-    const current = useQuery(currentArtOptions());
-    const selectArt = useSelectArt();
+    const tv = useTv();
+    const art = useQuery(artListOptions(tv.id, category === ALL ? undefined : category));
+    const current = useQuery(currentArtOptions(tv.id));
+    const selectArt = useSelectArt(tv.id);
     const [dialog, setDialog] = useState<Dialog>();
 
     return (
         <Stack>
-            <Title order={2}>Library</Title>
+            <Title order={2}>Library on {tv.name}</Title>
             <SegmentedControl data={FILTERS} value={category} onChange={onCategoryChange} w="fit-content" />
 
             {art.isError && <ErrorAlert error={art.error} />}

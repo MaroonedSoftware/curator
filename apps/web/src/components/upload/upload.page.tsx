@@ -6,6 +6,7 @@ import { IconPhoto, IconUpload, IconX } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import { NO_MATTE } from '../../api/mattes';
 import { useUploadArt } from '../../api/tv.mutations';
+import { useTv } from '../../tvs/tv.context';
 import { MattePicker } from '../art/matte.picker';
 
 /** The API's ceiling (apps/api's MAX_IMAGE_BYTES). A 4K JPEG is well under it. */
@@ -31,7 +32,8 @@ export function UploadPage() {
     const [portraitMatte, setPortraitMatte] = useState(NO_MATTE);
     const [show, setShow] = useState(true);
     const [uploaded, setUploaded] = useState<string>();
-    const upload = useUploadArt();
+    const tv = useTv();
+    const upload = useUploadArt(tv.id);
 
     const preview = useMemo(() => (file ? URL.createObjectURL(file) : undefined), [file]);
     useEffect(
@@ -63,7 +65,7 @@ export function UploadPage() {
 
     return (
         <Stack maw={640}>
-            <Title order={2}>Upload</Title>
+            <Title order={2}>Upload to {tv.name}</Title>
 
             <Dropzone
                 onDrop={files => files[0] && choose(files[0])}
@@ -106,7 +108,7 @@ export function UploadPage() {
                         {uploaded}
                     </Text>
                     . Find it in the{' '}
-                    <Link to="/library" search={{ category: 'MY-C0002' }}>
+                    <Link to="/tvs/$tvId/library" params={{ tvId: tv.id }} search={{ category: 'MY-C0002' }}>
                         library
                     </Link>
                     .

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { errorResponse, fakeApi, healthy, jsonResponse, noContent } from '../fake.api';
+import { errorResponse, fakeApi, jsonResponse, noContent, TV, TV_BASE, withTv } from '../fake.api';
 import { renderApp, screen, setupUser, waitFor } from '../test.render';
 
 const jpeg = () => new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0])], 'sunset.jpg', { type: 'image/jpeg' });
@@ -19,11 +19,11 @@ beforeAll(() => {
 
 function fakeTv() {
     return fakeApi({
-        'GET /health': healthy,
-        'POST /tv/art': () => jsonResponse({ contentId: 'MY-F0007' }, 201),
-        'PUT /tv/art/current': () => noContent(),
-        'GET /tv/art/current': () => jsonResponse({ contentId: 'MY-F0007', raw: {} }),
-        'GET /tv/art-mode': () => jsonResponse({ on: true }),
+        ...withTv(),
+        [`POST ${TV_BASE}/art`]: () => jsonResponse({ contentId: 'MY-F0007' }, 201),
+        [`PUT ${TV_BASE}/art/current`]: () => noContent(),
+        [`GET ${TV_BASE}/art/current`]: () => jsonResponse({ contentId: 'MY-F0007', raw: {} }),
+        [`GET ${TV_BASE}/art-mode`]: () => jsonResponse({ on: true }),
     });
 }
 
@@ -34,7 +34,7 @@ describe('upload', () => {
         const requests = fakeTv();
         const user = setupUser();
 
-        renderApp('/upload');
+        renderApp(`${TV_BASE}/upload`);
         await user.upload(await waitFor(fileInput), jpeg());
         expect(await screen.findByText('sunset.jpg')).toBeInTheDocument();
         expect(screen.getByAltText('Preview of sunset.jpg')).toBeInTheDocument();
@@ -47,18 +47,22 @@ describe('upload', () => {
         expect(await screen.findByText('On the TV')).toBeInTheDocument();
         expect(screen.getByText('MY-F0007')).toBeInTheDocument();
         const [post, put] = writes(requests);
-        expect(post).toMatchObject({ method: 'POST', path: '/tv/art' });
+        expect(post).toMatchObject({ method: 'POST', path: `${TV_BASE}/art` });
         expect(post?.headers.get('content-type')).toBe('image/jpeg');
         expect(post?.search.get('matte')).toBe('shadowbox_black');
         expect(post?.search.get('portraitMatte')).toBe('none');
-        expect(put).toMatchObject({ method: 'PUT', path: '/tv/art/current', body: { contentId: 'MY-F0007', show: true, category: 'MY-C0002' } });
+        expect(put).toMatchObject({
+            method: 'PUT',
+            path: `${TV_BASE}/art/current`,
+            body: { contentId: 'MY-F0007', show: true, category: 'MY-C0002' },
+        });
     });
 
     it('leaves the screen alone when asked to', async () => {
         const requests = fakeTv();
         const user = setupUser();
 
-        renderApp('/upload');
+        renderApp(`${TV_BASE}/upload`);
         await user.upload(await waitFor(fileInput), jpeg());
         await user.click(await screen.findByRole('checkbox', { name: /show it on the tv/i }));
         await user.click(screen.getByRole('button', { name: 'Upload' }));
@@ -72,7 +76,7 @@ describe('upload', () => {
         // applyAccept off, so the file reaches the dropzone as a dragged one would.
         const user = setupUser({ applyAccept: false });
 
-        renderApp('/upload');
+        renderApp(`${TV_BASE}/upload`);
         const gif = new File([new Uint8Array([0x47, 0x49, 0x46])], 'cat.gif', { type: 'image/gif' });
         await user.upload(await waitFor(fileInput), gif);
 
@@ -83,12 +87,12 @@ describe('upload', () => {
 
     it('explains an upload the TV never acknowledged, and keeps the file', async () => {
         fakeApi({
-            'GET /health': healthy,
-            'POST /tv/art': () => errorResponse(504, 'Gateway Timeout', { reason: 'send_image timed out after 15000ms' }),
+            ...withTv(),
+            [`POST ${TV_BASE}/art`]: () => errorResponse(504, 'Gateway Timeout', { reason: 'send_image timed out after 15000ms' }),
         });
         const user = setupUser();
 
-        renderApp('/upload');
+        renderApp(`${TV_BASE}/upload`);
         await user.upload(await waitFor(fileInput), jpeg());
         await user.click(await screen.findByRole('button', { name: 'Upload' }));
 

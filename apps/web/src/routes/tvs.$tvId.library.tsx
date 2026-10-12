@@ -5,7 +5,7 @@ export interface LibrarySearch {
     category?: string;
 }
 
-export const Route = createFileRoute('/library')({
+export const Route = createFileRoute('/tvs/$tvId/library')({
     validateSearch: (search: Record<string, unknown>): LibrarySearch => ({
         category: typeof search.category === 'string' && search.category !== ALL ? search.category : undefined,
     }),

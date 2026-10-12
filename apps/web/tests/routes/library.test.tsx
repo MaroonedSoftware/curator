@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { errorResponse, fakeApi, healthy, jsonResponse, noContent } from '../fake.api';
+import { errorResponse, fakeApi, jsonResponse, noContent, TV, TV_BASE, withTv } from '../fake.api';
 import { renderApp, screen, setupUser, waitFor, within } from '../test.render';
 
 type Item = { contentId: string; categoryId: string; raw: Record<string, unknown> };
@@ -11,22 +11,22 @@ const store: Item = { contentId: 'SAM-S0001', categoryId: 'MY-C0008', raw: { con
 function fakeTv(art: Item[] = [upload, store]) {
     const state = { art: [...art], current: 'SAM-S0001' };
     const requests = fakeApi({
-        'GET /health': healthy,
-        'GET /tv/art': request => {
+        ...withTv(),
+        [`GET ${TV_BASE}/art`]: request => {
             const category = request.search.get('category');
             return jsonResponse({ items: state.art.filter(item => !category || item.categoryId === category) });
         },
-        'GET /tv/art/current': () => jsonResponse({ contentId: state.current, raw: {} }),
-        'GET /tv/art-mode': () => jsonResponse({ on: true }),
-        'PUT /tv/art/current': request => {
+        [`GET ${TV_BASE}/art/current`]: () => jsonResponse({ contentId: state.current, raw: {} }),
+        [`GET ${TV_BASE}/art-mode`]: () => jsonResponse({ on: true }),
+        [`PUT ${TV_BASE}/art/current`]: request => {
             state.current = (request.body as { contentId: string }).contentId;
             return noContent();
         },
-        'DELETE /tv/art/MY-F0001': () => {
+        [`DELETE ${TV_BASE}/art/MY-F0001`]: () => {
             state.art = state.art.filter(item => item.contentId !== 'MY-F0001');
             return noContent();
         },
-        'PUT /tv/art/MY-F0001/matte': () => noContent(),
+        [`PUT ${TV_BASE}/art/MY-F0001/matte`]: () => noContent(),
     });
     return { state, requests };
 }
@@ -37,7 +37,7 @@ describe('library', () => {
     it('lists the TV’s artwork with its category and matte, marking what’s on screen', async () => {
         fakeTv();
 
-        renderApp('/library');
+        renderApp(`${TV_BASE}/library`);
 
         const uploadRow = (await screen.findByText('MY-F0001')).closest('tr')!;
         expect(within(uploadRow).getByText('My Photos')).toBeInTheDocument();
@@ -50,35 +50,35 @@ describe('library', () => {
         const { requests } = fakeTv();
         const user = setupUser();
 
-        const { router } = renderApp('/library');
+        const { router } = renderApp(`${TV_BASE}/library`);
         await screen.findByText('SAM-S0001');
         await user.click(screen.getByRole('radio', { name: 'My Photos' }));
 
         await waitFor(() => expect(screen.queryByText('SAM-S0001')).not.toBeInTheDocument());
         expect(router.state.location.search).toEqual({ category: 'MY-C0002' });
-        expect(requests.filter(request => request.path === '/tv/art').map(request => request.search.get('category'))).toContain('MY-C0002');
+        expect(requests.filter(request => request.path === `${TV_BASE}/art`).map(request => request.search.get('category'))).toContain('MY-C0002');
     });
 
     it('opens on a category named in the URL', async () => {
         const { requests } = fakeTv();
 
-        renderApp('/library?category=MY-C0008');
+        renderApp(`${TV_BASE}/library?category=MY-C0008`);
 
         expect(await screen.findByText('SAM-S0001')).toBeInTheDocument();
-        expect(requests.find(request => request.path === '/tv/art')?.search.get('category')).toBe('MY-C0008');
+        expect(requests.find(request => request.path === `${TV_BASE}/art`)?.search.get('category')).toBe('MY-C0008');
     });
 
     it('shows an artwork on the TV', async () => {
         const { requests } = fakeTv();
         const user = setupUser();
 
-        renderApp('/library');
+        renderApp(`${TV_BASE}/library`);
         await user.click(await screen.findByRole('button', { name: 'Actions for MY-F0001' }));
         await user.click(await screen.findByRole('menuitem', { name: 'Show on TV' }));
 
         await waitFor(() =>
             expect(writes(requests)).toEqual([
-                expect.objectContaining({ path: '/tv/art/current', body: { contentId: 'MY-F0001', category: 'MY-C0002' } }),
+                expect.objectContaining({ path: `${TV_BASE}/art/current`, body: { contentId: 'MY-F0001', category: 'MY-C0002' } }),
             ]),
         );
         const uploadRow = screen.getByText('MY-F0001').closest('tr')!;
@@ -89,21 +89,21 @@ describe('library', () => {
         const { requests } = fakeTv();
         const user = setupUser();
 
-        renderApp('/library');
+        renderApp(`${TV_BASE}/library`);
         await user.click(await screen.findByRole('button', { name: 'Actions for MY-F0001' }));
         await user.click(await screen.findByRole('menuitem', { name: 'Delete' }));
         expect(writes(requests)).toEqual([]);
         await user.click(await screen.findByRole('button', { name: 'Delete' }));
 
         await waitFor(() => expect(screen.queryByText('MY-F0001')).not.toBeInTheDocument());
-        expect(writes(requests)).toEqual([expect.objectContaining({ method: 'DELETE', path: '/tv/art/MY-F0001' })]);
+        expect(writes(requests)).toEqual([expect.objectContaining({ method: 'DELETE', path: `${TV_BASE}/art/MY-F0001` })]);
     });
 
     it('offers no delete for the Art Store’s pieces', async () => {
         fakeTv();
         const user = setupUser();
 
-        renderApp('/library');
+        renderApp(`${TV_BASE}/library`);
         await user.click(await screen.findByRole('button', { name: 'Actions for SAM-S0001' }));
 
         expect(await screen.findByRole('menuitem', { name: 'Show on TV' })).toBeInTheDocument();
@@ -114,7 +114,7 @@ describe('library', () => {
         const { requests } = fakeTv();
         const user = setupUser();
 
-        renderApp('/library');
+        renderApp(`${TV_BASE}/library`);
         await user.click(await screen.findByRole('button', { name: 'Actions for MY-F0001' }));
         await user.click(await screen.findByRole('menuitem', { name: 'Change matte' }));
         expect(await screen.findByRole('combobox', { name: 'Landscape' })).toHaveValue('shadowbox');
@@ -126,21 +126,22 @@ describe('library', () => {
 
         await waitFor(() =>
             expect(writes(requests)).toEqual([
-                expect.objectContaining({ path: '/tv/art/MY-F0001/matte', body: { matte: 'shadowbox_apricot', portraitMatte: 'none' } }),
+                expect.objectContaining({ path: `${TV_BASE}/art/MY-F0001/matte`, body: { matte: 'shadowbox_apricot', portraitMatte: 'none' } }),
             ]),
         );
     });
 
     it('keeps the matte dialog open and explains a matte the TV rejects', async () => {
         fakeApi({
-            'GET /health': healthy,
-            'GET /tv/art': () => jsonResponse({ items: [upload] }),
-            'GET /tv/art/current': () => jsonResponse({ raw: {} }),
-            'PUT /tv/art/MY-F0001/matte': () => errorResponse(422, 'Unprocessable Entity', { reason: 'change_matte failed with error code -7' }),
+            ...withTv(),
+            [`GET ${TV_BASE}/art`]: () => jsonResponse({ items: [upload] }),
+            [`GET ${TV_BASE}/art/current`]: () => jsonResponse({ raw: {} }),
+            [`PUT ${TV_BASE}/art/MY-F0001/matte`]: () =>
+                errorResponse(422, 'Unprocessable Entity', { reason: 'change_matte failed with error code -7' }),
         });
         const user = setupUser();
 
-        renderApp('/library');
+        renderApp(`${TV_BASE}/library`);
         await user.click(await screen.findByRole('button', { name: 'Actions for MY-F0001' }));
         await user.click(await screen.findByRole('menuitem', { name: 'Change matte' }));
         await user.click(await screen.findByRole('button', { name: 'Save' }));
@@ -152,7 +153,7 @@ describe('library', () => {
     it('says so when a category is empty', async () => {
         fakeTv([store]);
 
-        renderApp('/library?category=MY-C0002');
+        renderApp(`${TV_BASE}/library?category=MY-C0002`);
 
         expect(await screen.findByText('Nothing in my photos yet.')).toBeInTheDocument();
     });

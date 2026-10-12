@@ -1,5 +1,5 @@
 /**
- * A typed client for @curator/api. In development Vite proxies /api to the API (vite.config.ts);
+ * A typed client for @curator/api: `api` for the TVs themselves, `tvApi(tvId)` for one TV's art. In development Vite proxies /api to the API (vite.config.ts);
  * in production the API is expected behind the same origin at /api.
  */
 
@@ -127,27 +127,33 @@ export const api = {
     connectTv: (tv: ConnectTv) => request<Tv>('/tvs', json('POST', tv)),
     renameTv: (tvId: string, name: string) => request<Tv>(`/tvs/${encodeURIComponent(tvId)}`, json('PATCH', { name })),
     removeTv: (tvId: string) => request<void>(`/tvs/${encodeURIComponent(tvId)}`, { method: 'DELETE' }),
+};
 
-    device: () => request<Device>('/tv'),
-    apiVersion: async () => (await request<{ version: string }>('/tv/api-version')).version,
-    listArt: async (category?: string) => (await request<{ items: ArtItem[] }>(`/tv/art${query({ category })}`)).items,
-    currentArt: () => request<CurrentArt>('/tv/art/current'),
-    artMode: async () => (await request<{ on: boolean }>('/tv/art-mode')).on,
+/** One TV's own endpoints, under /tvs/:tvId. */
+export const tvApi = (tvId: string) => {
+    const base = `/tvs/${encodeURIComponent(tvId)}`;
+    return {
+        device: () => request<Device>(`${base}/device`),
+        apiVersion: async () => (await request<{ version: string }>(`${base}/api-version`)).version,
+        listArt: async (category?: string) => (await request<{ items: ArtItem[] }>(`${base}/art${query({ category })}`)).items,
+        currentArt: () => request<CurrentArt>(`${base}/art/current`),
+        artMode: async () => (await request<{ on: boolean }>(`${base}/art-mode`)).on,
 
-    selectArt: (contentId: string, opts: { show?: boolean; category?: string } = {}) =>
-        request<void>('/tv/art/current', json('PUT', { contentId, ...opts })),
-    deleteArt: (contentId: string) => request<void>(`/tv/art/${encodeURIComponent(contentId)}`, { method: 'DELETE' }),
-    changeMatte: (contentId: string, matte: string, portraitMatte?: string) =>
-        request<void>(`/tv/art/${encodeURIComponent(contentId)}/matte`, json('PUT', { matte, portraitMatte })),
-    setArtMode: (on: boolean) => request<void>('/tv/art-mode', json('PUT', { on })),
+        selectArt: (contentId: string, opts: { show?: boolean; category?: string } = {}) =>
+            request<void>(`${base}/art/current`, json('PUT', { contentId, ...opts })),
+        deleteArt: (contentId: string) => request<void>(`${base}/art/${encodeURIComponent(contentId)}`, { method: 'DELETE' }),
+        changeMatte: (contentId: string, matte: string, portraitMatte?: string) =>
+            request<void>(`${base}/art/${encodeURIComponent(contentId)}/matte`, json('PUT', { matte, portraitMatte })),
+        setArtMode: (on: boolean) => request<void>(`${base}/art-mode`, json('PUT', { on })),
 
-    /** Resolves with the content id the TV assigned. */
-    uploadArt: async (image: Blob, opts: MatteOptions = {}) =>
-        (
-            await request<{ contentId: string }>(`/tv/art${query({ ...opts })}`, {
-                method: 'POST',
-                headers: { 'content-type': image.type },
-                body: image,
-            })
-        ).contentId,
+        /** Resolves with the content id the TV assigned. */
+        uploadArt: async (image: Blob, opts: MatteOptions = {}) =>
+            (
+                await request<{ contentId: string }>(`${base}/art${query({ ...opts })}`, {
+                    method: 'POST',
+                    headers: { 'content-type': image.type },
+                    body: image,
+                })
+            ).contentId,
+    };
 };

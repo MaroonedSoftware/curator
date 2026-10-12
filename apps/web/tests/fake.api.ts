@@ -41,3 +41,25 @@ export function fakeApi(routes: Record<string, Responder>) {
 }
 
 export const healthy = () => jsonResponse({ status: 'ok', uptimeMs: 1000 });
+
+/** The TV the page tests are about. */
+export const TV = {
+    id: '11111111-1111-4111-8111-111111111111',
+    name: 'Living Room',
+    host: '192.168.1.50',
+    port: 8002,
+    model: 'QN50LS03FAFXZA',
+    paired: true,
+    createdAt: '2026-10-12T10:00:00.000Z',
+    updatedAt: '2026-10-12T10:00:00.000Z',
+};
+
+/** Where that TV's pages and endpoints live: `/tvs/<id>`. */
+export const TV_BASE = `/tvs/${TV.id}`;
+
+/** What every page under /tvs/$tvId reads before its own data: the API's health, the TV list and the TV. */
+export const withTv = () => ({
+    'GET /health': healthy,
+    'GET /tvs': () => jsonResponse({ items: [TV] }),
+    [`GET ${TV_BASE}`]: () => jsonResponse(TV),
+});

@@ -10,73 +10,109 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as LibraryRouteImport } from './routes/library'
-import { Route as StatusRouteImport } from './routes/status'
-import { Route as TvsRouteImport } from './routes/tvs'
-import { Route as UploadRouteImport } from './routes/upload'
+import { Route as TvsIndexRouteImport } from './routes/tvs.index'
+import { Route as TvsTvIdRouteImport } from './routes/tvs.$tvId'
+import { Route as TvsTvIdIndexRouteImport } from './routes/tvs.$tvId.index'
+import { Route as TvsTvIdLibraryRouteImport } from './routes/tvs.$tvId.library'
+import { Route as TvsTvIdStatusRouteImport } from './routes/tvs.$tvId.status'
+import { Route as TvsTvIdUploadRouteImport } from './routes/tvs.$tvId.upload'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LibraryRoute = LibraryRouteImport.update({
+const TvsIndexRoute = TvsIndexRouteImport.update({
+  id: '/tvs/',
+  path: '/tvs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvsTvIdRoute = TvsTvIdRouteImport.update({
+  id: '/tvs/$tvId',
+  path: '/tvs/$tvId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvsTvIdIndexRoute = TvsTvIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TvsTvIdRoute,
+} as any)
+const TvsTvIdLibraryRoute = TvsTvIdLibraryRouteImport.update({
   id: '/library',
   path: '/library',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => TvsTvIdRoute,
 } as any)
-const StatusRoute = StatusRouteImport.update({
+const TvsTvIdStatusRoute = TvsTvIdStatusRouteImport.update({
   id: '/status',
   path: '/status',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => TvsTvIdRoute,
 } as any)
-const TvsRoute = TvsRouteImport.update({
-  id: '/tvs',
-  path: '/tvs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UploadRoute = UploadRouteImport.update({
+const TvsTvIdUploadRoute = TvsTvIdUploadRouteImport.update({
   id: '/upload',
   path: '/upload',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => TvsTvIdRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/library': typeof LibraryRoute
-  '/status': typeof StatusRoute
-  '/tvs': typeof TvsRoute
-  '/upload': typeof UploadRoute
+  '/tvs/$tvId': typeof TvsTvIdRouteWithChildren
+  '/tvs/': typeof TvsIndexRoute
+  '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute
+  '/tvs/$tvId/status': typeof TvsTvIdStatusRoute
+  '/tvs/$tvId/upload': typeof TvsTvIdUploadRoute
+  '/tvs/$tvId/': typeof TvsTvIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/library': typeof LibraryRoute
-  '/status': typeof StatusRoute
-  '/tvs': typeof TvsRoute
-  '/upload': typeof UploadRoute
+  '/tvs': typeof TvsIndexRoute
+  '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute
+  '/tvs/$tvId/status': typeof TvsTvIdStatusRoute
+  '/tvs/$tvId/upload': typeof TvsTvIdUploadRoute
+  '/tvs/$tvId': typeof TvsTvIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/library': typeof LibraryRoute
-  '/status': typeof StatusRoute
-  '/tvs': typeof TvsRoute
-  '/upload': typeof UploadRoute
+  '/tvs/$tvId': typeof TvsTvIdRouteWithChildren
+  '/tvs/': typeof TvsIndexRoute
+  '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute
+  '/tvs/$tvId/status': typeof TvsTvIdStatusRoute
+  '/tvs/$tvId/upload': typeof TvsTvIdUploadRoute
+  '/tvs/$tvId/': typeof TvsTvIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/library' | '/status' | '/tvs' | '/upload'
+  fullPaths:
+    | '/'
+    | '/tvs/$tvId'
+    | '/tvs/'
+    | '/tvs/$tvId/library'
+    | '/tvs/$tvId/status'
+    | '/tvs/$tvId/upload'
+    | '/tvs/$tvId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/library' | '/status' | '/tvs' | '/upload'
-  id: '__root__' | '/' | '/library' | '/status' | '/tvs' | '/upload'
+  to:
+    | '/'
+    | '/tvs'
+    | '/tvs/$tvId/library'
+    | '/tvs/$tvId/status'
+    | '/tvs/$tvId/upload'
+    | '/tvs/$tvId'
+  id:
+    | '__root__'
+    | '/'
+    | '/tvs/$tvId'
+    | '/tvs/'
+    | '/tvs/$tvId/library'
+    | '/tvs/$tvId/status'
+    | '/tvs/$tvId/upload'
+    | '/tvs/$tvId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  LibraryRoute: typeof LibraryRoute
-  StatusRoute: typeof StatusRoute
-  TvsRoute: typeof TvsRoute
-  UploadRoute: typeof UploadRoute
+  TvsTvIdRoute: typeof TvsTvIdRouteWithChildren
+  TvsIndexRoute: typeof TvsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -88,43 +124,72 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/library': {
-      id: '/library'
-      path: '/library'
-      fullPath: '/library'
-      preLoaderRoute: typeof LibraryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/status': {
-      id: '/status'
-      path: '/status'
-      fullPath: '/status'
-      preLoaderRoute: typeof StatusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tvs': {
-      id: '/tvs'
+    '/tvs/': {
+      id: '/tvs/'
       path: '/tvs'
-      fullPath: '/tvs'
-      preLoaderRoute: typeof TvsRouteImport
+      fullPath: '/tvs/'
+      preLoaderRoute: typeof TvsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/upload': {
-      id: '/upload'
-      path: '/upload'
-      fullPath: '/upload'
-      preLoaderRoute: typeof UploadRouteImport
+    '/tvs/$tvId': {
+      id: '/tvs/$tvId'
+      path: '/tvs/$tvId'
+      fullPath: '/tvs/$tvId'
+      preLoaderRoute: typeof TvsTvIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/tvs/$tvId/': {
+      id: '/tvs/$tvId/'
+      path: '/'
+      fullPath: '/tvs/$tvId/'
+      preLoaderRoute: typeof TvsTvIdIndexRouteImport
+      parentRoute: typeof TvsTvIdRoute
+    }
+    '/tvs/$tvId/library': {
+      id: '/tvs/$tvId/library'
+      path: '/library'
+      fullPath: '/tvs/$tvId/library'
+      preLoaderRoute: typeof TvsTvIdLibraryRouteImport
+      parentRoute: typeof TvsTvIdRoute
+    }
+    '/tvs/$tvId/status': {
+      id: '/tvs/$tvId/status'
+      path: '/status'
+      fullPath: '/tvs/$tvId/status'
+      preLoaderRoute: typeof TvsTvIdStatusRouteImport
+      parentRoute: typeof TvsTvIdRoute
+    }
+    '/tvs/$tvId/upload': {
+      id: '/tvs/$tvId/upload'
+      path: '/upload'
+      fullPath: '/tvs/$tvId/upload'
+      preLoaderRoute: typeof TvsTvIdUploadRouteImport
+      parentRoute: typeof TvsTvIdRoute
     }
   }
 }
 
+interface TvsTvIdRouteChildren {
+  TvsTvIdLibraryRoute: typeof TvsTvIdLibraryRoute
+  TvsTvIdStatusRoute: typeof TvsTvIdStatusRoute
+  TvsTvIdUploadRoute: typeof TvsTvIdUploadRoute
+  TvsTvIdIndexRoute: typeof TvsTvIdIndexRoute
+}
+
+const TvsTvIdRouteChildren: TvsTvIdRouteChildren = {
+  TvsTvIdLibraryRoute: TvsTvIdLibraryRoute,
+  TvsTvIdStatusRoute: TvsTvIdStatusRoute,
+  TvsTvIdUploadRoute: TvsTvIdUploadRoute,
+  TvsTvIdIndexRoute: TvsTvIdIndexRoute,
+}
+
+const TvsTvIdRouteWithChildren =
+  TvsTvIdRoute._addFileChildren(TvsTvIdRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  LibraryRoute: LibraryRoute,
-  StatusRoute: StatusRoute,
-  TvsRoute: TvsRoute,
-  UploadRoute: UploadRoute,
+  TvsTvIdRoute: TvsTvIdRouteWithChildren,
+  TvsIndexRoute: TvsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

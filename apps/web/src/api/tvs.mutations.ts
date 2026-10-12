@@ -20,7 +20,10 @@ export function useRenameTv() {
     return useMutation({
         mutationFn: ({ tvId, name }: { tvId: string; name: string }) => api.renameTv(tvId, name),
         onError: notifyFailure,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.tvs, exact: true }),
+        onSuccess: (_tv, { tvId }) => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.tvs, exact: true });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.tv(tvId), exact: true });
+        },
     });
 }
 
@@ -29,7 +32,8 @@ export function useRemoveTv() {
     return useMutation({
         mutationFn: (tvId: string) => api.removeTv(tvId),
         onError: notifyFailure,
-        onSuccess: () => {
+        onSuccess: (_result, tvId) => {
+            queryClient.removeQueries({ queryKey: queryKeys.tv(tvId) });
             void queryClient.invalidateQueries({ queryKey: queryKeys.tvs, exact: true });
             void queryClient.invalidateQueries({ queryKey: queryKeys.discoveredTvs });
         },

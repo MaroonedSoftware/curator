@@ -4,15 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import { categoryLabel } from '../../api/category.labels';
 import { useSetArtMode } from '../../api/tv.mutations';
 import { artModeOptions, currentArtOptions } from '../../api/tv.queries';
+import { useTv } from '../../tvs/tv.context';
 import { ErrorAlert } from '../shared/error.alert';
 
 const matteOf = (raw: Record<string, unknown>): string | undefined => (typeof raw.matte_id === 'string' ? raw.matte_id : undefined);
 
 /** The artwork on screen, and whether the TV is showing art at all. */
 export function NowShowingPage() {
-    const current = useQuery(currentArtOptions());
-    const artMode = useQuery(artModeOptions());
-    const setArtMode = useSetArtMode();
+    const tv = useTv();
+    const current = useQuery(currentArtOptions(tv.id));
+    const artMode = useQuery(artModeOptions(tv.id));
+    const setArtMode = useSetArtMode(tv.id);
 
     const refresh = () => {
         void current.refetch();
@@ -22,7 +24,7 @@ export function NowShowingPage() {
     return (
         <Stack maw={640}>
             <Group justify="space-between">
-                <Title order={2}>Now showing</Title>
+                <Title order={2}>Now showing on {tv.name}</Title>
                 <Tooltip label="Ask the TV again">
                     <ActionIcon variant="subtle" aria-label="Refresh" onClick={refresh} loading={current.isFetching || artMode.isFetching}>
                         <IconRefresh size={18} />

@@ -1,13 +1,15 @@
 import { Button, Group, Modal, Stack, Text } from '@mantine/core';
 import type { ArtItem } from '../../api/api.client';
 import { useDeleteArt } from '../../api/tv.mutations';
+import { useTv } from '../../tvs/tv.context';
 
 /** Deleting removes the image from the TV for good, so it asks first. */
 export function DeleteModal({ item, onClose }: { item: ArtItem; onClose: () => void }) {
-    const deleteArt = useDeleteArt();
+    const tv = useTv();
+    const deleteArt = useDeleteArt(tv.id);
 
     return (
-        <Modal opened onClose={onClose} title="Delete from the TV?">
+        <Modal opened onClose={onClose} title={`Delete from ${tv.name}?`}>
             <Stack>
                 <Text>
                     <Text span ff="monospace">

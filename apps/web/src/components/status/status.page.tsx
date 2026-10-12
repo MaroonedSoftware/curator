@@ -1,14 +1,16 @@
 import { Badge, Card, Group, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { apiVersionOptions, deviceOptions } from '../../api/tv.queries';
+import { useTv } from '../../tvs/tv.context';
 import { ErrorAlert } from '../shared/error.alert';
 
 const yesNo = (value: boolean) => (value ? 'Yes' : 'No');
 
 /** What the API knows about the TV. */
 export function StatusPage() {
-    const device = useQuery(deviceOptions());
-    const version = useQuery({ ...apiVersionOptions(), enabled: device.isSuccess });
+    const tv = useTv();
+    const device = useQuery(deviceOptions(tv.id));
+    const version = useQuery({ ...apiVersionOptions(tv.id), enabled: device.isSuccess });
 
     return (
         <Stack maw={640}>
@@ -18,13 +20,19 @@ export function StatusPage() {
             {device.isSuccess && (
                 <Card withBorder>
                     <Group justify="space-between" mb="sm">
-                        <Text fw={600}>{device.data.name ?? 'Frame TV'}</Text>
+                        <Text fw={600}>{tv.name}</Text>
                         <Badge color={device.data.powerOn ? 'teal' : 'gray'} variant="light">
                             {device.data.powerOn ? 'On' : 'Standby'}
                         </Badge>
                     </Group>
                     <Table variant="vertical" withTableBorder={false}>
                         <Table.Tbody>
+                            <Table.Tr>
+                                <Table.Th w={180}>Address</Table.Th>
+                                <Table.Td ff="monospace">
+                                    {tv.host}:{tv.port}
+                                </Table.Td>
+                            </Table.Tr>
                             <Table.Tr>
                                 <Table.Th w={180}>Model</Table.Th>
                                 <Table.Td>{device.data.model ?? 'Unknown'}</Table.Td>
