@@ -11,6 +11,7 @@ import { useTv } from '../../tvs/tv.context';
 import { ErrorAlert } from '../shared/error.alert';
 import { ArtActions } from './art.actions';
 import { ArtThumbnail } from './art.thumbnail';
+import { CategoryLabels } from './category.labels';
 import { DeleteModal } from './delete.modal';
 import { MatteModal } from './matte.modal';
 
@@ -22,7 +23,7 @@ const FILTERS = [
     { value: ALL, label: 'All' },
     { value: Category.MyPhotos, label: 'My Photos' },
     { value: Category.Favourites, label: 'Favourites' },
-    { value: Category.Store, label: 'Art Store' },
+    { value: Category.Other, label: 'Other' },
 ];
 
 const VIEWS = [
@@ -137,7 +138,9 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange }: 
                                         {onScreen(item) && onScreenBadge}
                                     </Group>
                                 </Table.Td>
-                                <Table.Td>{categoryLabel(item.categoryId)}</Table.Td>
+                                <Table.Td>
+                                    <CategoryLabels categoryIds={item.categoryIds} />
+                                </Table.Td>
                                 <Table.Td>{matteLabel(matteOf(item))}</Table.Td>
                                 <Table.Td>{actions(item)}</Table.Td>
                             </Table.Tr>

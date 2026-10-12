@@ -10,7 +10,8 @@ function twoTvs() {
         [`GET /tvs/${tv.id}`]: () => jsonResponse(tv),
         [`GET /tvs/${tv.id}/art/current`]: () => jsonResponse({ contentId: `${tv.name}-art`, raw: {} }),
         [`GET /tvs/${tv.id}/art-mode`]: () => jsonResponse({ on: true }),
-        [`GET /tvs/${tv.id}/art`]: () => jsonResponse({ items: [{ contentId: `${tv.name}-upload`, categoryId: 'MY-C0002', raw: {} }] }),
+        [`GET /tvs/${tv.id}/art`]: () =>
+            jsonResponse({ items: [{ contentId: `${tv.name}-upload`, categoryId: 'MY-C0002', categoryIds: ['MY-C0002'], raw: {} }] }),
     });
     return fakeApi({ 'GET /health': healthy, 'GET /tvs': () => jsonResponse({ items: [TV, bedroom] }), ...tvApi(TV), ...tvApi(bedroom) });
 }

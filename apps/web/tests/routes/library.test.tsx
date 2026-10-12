@@ -3,10 +3,15 @@ import { errorResponse, fakeApi, jsonResponse, noContent, TV, TV_BASE, withTv } 
 import { fireEvent } from '@testing-library/react';
 import { renderApp, screen, setupUser, waitFor, within } from '../test.render';
 
-type Item = { contentId: string; categoryId: string; raw: Record<string, unknown> };
+type Item = { contentId: string; categoryId: string; categoryIds: string[]; raw: Record<string, unknown> };
 
-const upload: Item = { contentId: 'MY-F0001', categoryId: 'MY-C0002', raw: { content_id: 'MY-F0001', matte_id: 'shadowbox_polar' } };
-const store: Item = { contentId: 'SAM-S0001', categoryId: 'MY-C0008', raw: { content_id: 'SAM-S0001', matte_id: 'none' } };
+const upload: Item = {
+    contentId: 'MY-F0001',
+    categoryId: 'MY-C0002',
+    categoryIds: ['MY-C0002'],
+    raw: { content_id: 'MY-F0001', matte_id: 'shadowbox_polar' },
+};
+const store: Item = { contentId: 'SAM-S0001', categoryId: 'MY-C0008', categoryIds: ['MY-C0008'], raw: { content_id: 'SAM-S0001', matte_id: 'none' } };
 
 /** A TV holding `art`, with SAM-S0001 on screen. Writes change the state the next read returns. */
 function fakeTv(art: Item[] = [upload, store]) {
@@ -100,7 +105,7 @@ describe('library', () => {
         expect(writes(requests)).toEqual([expect.objectContaining({ method: 'DELETE', path: `${TV_BASE}/art/MY-F0001` })]);
     });
 
-    it('offers no delete for the Art Store’s pieces', async () => {
+    it('offers no delete for a piece that isn’t an upload', async () => {
         fakeTv();
         const user = setupUser();
 
@@ -200,6 +205,22 @@ describe('library', () => {
         await user.click(await screen.findByRole('menuitem', { name: 'Show on TV' }));
 
         await waitFor(() => expect(writes(requests)).toEqual([expect.objectContaining({ body: { contentId: 'MY-F0001', category: 'MY-C0002' } })]));
+    });
+
+    it('labels MY-C0008 Other and shows every category, offering delete for an upload listed outside My Photos', async () => {
+        // As a 2025 Frame lists them: an upload (MY_F id) under MY-C0008 as well as My Photos.
+        const newer: Item = { contentId: 'MY_F0019', categoryId: 'MY-C0008', categoryIds: ['MY-C0008', 'MY-C0002'], raw: { content_id: 'MY_F0019' } };
+        fakeTv([newer]);
+        const user = setupUser();
+
+        renderApp(`${TV_BASE}/library?view=list`);
+
+        const row = (await screen.findByText('MY_F0019')).closest('tr')!;
+        expect(within(row).getByText(/^Other/)).toHaveAttribute('title', 'MY-C0008');
+        expect(within(row).getByText('My Photos')).toHaveAttribute('title', 'MY-C0002');
+        expect(screen.getByRole('radio', { name: 'Other' })).toBeInTheDocument();
+        await user.click(within(row).getByRole('button', { name: 'Actions for MY_F0019' }));
+        expect(await screen.findByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
     });
 
     it('says so when a category is empty', async () => {

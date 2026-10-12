@@ -20,7 +20,10 @@ export interface Device {
 
 export interface ArtItem {
     contentId: string;
+    /** The first of `categoryIds`. */
     categoryId: string;
+    /** Every category the TV lists the piece under. */
+    categoryIds: string[];
     raw: Record<string, unknown>;
 }
 
@@ -63,12 +66,18 @@ export interface MatteOptions {
     portraitMatte?: string;
 }
 
-/** TV-side categories. */
+/**
+ * TV-side categories. MY-C0008 is the Art Store in the reference library, but a 2025 Frame lists
+ * uploads there too, so it is shown as Other.
+ */
 export const Category = {
     MyPhotos: 'MY-C0002',
     Favourites: 'MY-C0004',
-    Store: 'MY-C0008',
+    Other: 'MY-C0008',
 } as const;
+
+/** Uploads are ours to delete: anything in My Photos, or with an upload's id (MY-F0001, or MY_F0001 on newer firmware). */
+export const isUpload = (item: ArtItem): boolean => item.categoryIds.includes(Category.MyPhotos) || /^MY[-_]F/.test(item.contentId);
 
 /** A non-2xx answer from the API, carrying its status and the `details` ServerKit renders. */
 export class ApiError extends Error {

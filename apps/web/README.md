@@ -28,7 +28,7 @@ The header's TV picker switches TV and stays on the same page. A link to a TV th
 says so and points back to `/tvs`.
 
 The TV doesn't confirm most writes, so pages read its state back afterwards rather than trusting
-the request. Delete is offered only for uploads (My Photos). Mattes are a style and a colour from
+the request. Delete is offered only for uploads (anything in My Photos, or with an upload's `MY-F`/`MY_F` id). `MY-C0008` is shown as Other: the reference calls it the Art Store, but a 2025 Frame lists uploads there too. Each category's TV id shows on hover. Mattes are a style and a colour from
 the lists the reference library documents; a matte that doesn't fit the image is refused by the TV.
 
 Thumbnails load lazily from the API, which batches and caches them; a piece the TV has no thumbnail for shows a placeholder.
