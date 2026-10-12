@@ -1,6 +1,6 @@
 # curator
 
-pnpm + turbo workspace. Libraries live in `packages/`; shared config in `packages/config-*` (`@repo/*`).
+pnpm + turbo workspace. Deployables live in `apps/` (`@curator/api`, on ServerKit Fastify); libraries in `packages/`; shared config in `packages/config-*` (`@repo/*`).
 
 ## Rules that apply everywhere
 

@@ -1,0 +1,7 @@
+# Local development defaults. Committed: nothing here is a secret.
+# Per-machine overrides go in the gitignored appconfig.local.yaml. Any string may be ${env:NAME}.
+
+server:
+    port: 14100
+    # Browser origins allowed by CORS, comma-separated.
+    corsOrigins: http://localhost:14102

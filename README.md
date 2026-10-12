@@ -7,6 +7,8 @@ Samsung Frame TV artwork management.
 pnpm + turbo workspace.
 
 ```
+apps/
+  api/                @curator/api: HTTP API over the Frame client, on ServerKit Fastify (see its README)
 packages/
   frame/              @curator/frame: client for the Frame's local art-mode protocol (see its README)
   config-eslint/      @repo/config-eslint: shared ESLint flat config
@@ -22,6 +24,7 @@ pnpm typecheck
 pnpm lint
 pnpm test
 pnpm format         # prettier --write .
+pnpm --filter @curator/api dev   # the API on :14100, restarting on change
 ```
 
 Node 26+ (`.nvmrc`), pnpm 11.

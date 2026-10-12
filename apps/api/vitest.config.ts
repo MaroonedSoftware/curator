@@ -1,0 +1,8 @@
+import { defineConfig } from 'vitest/config';
+
+// Tests live in a top-level tests/ folder mirroring src/, importing ../src/...
+export default defineConfig({
+    test: {
+        include: ['./tests/**/*.test.ts'],
+    },
+});
