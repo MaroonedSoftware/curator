@@ -15,14 +15,14 @@ production deployment needs the same: the API reachable at `/api` on the app's o
 
 ## Pages
 
-| Path                 | Does                                                                                               |
-| -------------------- | -------------------------------------------------------------------------------------------------- |
-| `/`                  | Opens the TV this browser last looked at, else the first one, else `/tvs`                          |
-| `/tvs`               | The stored TVs (rename, remove), and adding one: search the network or type its address, then pair |
-| `/tvs/$tvId`         | Now showing: the artwork on screen, and an art-mode switch                                         |
-| `/tvs/$tvId/library` | The TV's art by category (`?category=`), with Show on TV, Change matte and Delete                  |
-| `/tvs/$tvId/upload`  | Drop a JPEG or PNG (up to 20MB), pick its mattes, and optionally show it at once                   |
-| `/tvs/$tvId/status`  | The TV's address, model, power state and art API version                                           |
+| Path                 | Does                                                                                                                            |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                  | Opens the TV this browser last looked at, else the first one, else `/tvs`                                                       |
+| `/tvs`               | The stored TVs (rename, remove), and adding one: search the network or type its address, then pair                              |
+| `/tvs/$tvId`         | Now showing: the artwork on screen, and an art-mode switch                                                                      |
+| `/tvs/$tvId/library` | The TV's art by category (`?category=`) as a thumbnail grid, or a list (`?view=list`), with Show on TV, Change matte and Delete |
+| `/tvs/$tvId/upload`  | Drop a JPEG or PNG (up to 20MB), pick its mattes, and optionally show it at once                                                |
+| `/tvs/$tvId/status`  | The TV's address, model, power state and art API version                                                                        |
 
 The header's TV picker switches TV and stays on the same page. A link to a TV that has been removed
 says so and points back to `/tvs`.
@@ -31,7 +31,7 @@ The TV doesn't confirm most writes, so pages read its state back afterwards rath
 the request. Delete is offered only for uploads (My Photos). Mattes are a style and a colour from
 the lists the reference library documents; a matte that doesn't fit the image is refused by the TV.
 
-There are no thumbnails yet: the frame client can't fetch them, so artwork is listed by content id.
+Thumbnails load lazily from the API, which batches and caches them; a piece the TV has no thumbnail for shows a placeholder.
 
 ## Layout
 

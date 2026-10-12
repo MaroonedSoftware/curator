@@ -146,6 +146,9 @@ export const tvApi = (tvId: string) => {
             request<void>(`${base}/art/${encodeURIComponent(contentId)}/matte`, json('PUT', { matte, portraitMatte })),
         setArtMode: (on: boolean) => request<void>(`${base}/art-mode`, json('PUT', { on })),
 
+        /** Where the browser loads a piece's thumbnail from. The API batches and caches these. */
+        thumbnailUrl: (contentId: string) => `${BASE}${base}/art/${encodeURIComponent(contentId)}/thumbnail`,
+
         /** Resolves with the content id the TV assigned. */
         uploadArt: async (image: Blob, opts: MatteOptions = {}) =>
             (

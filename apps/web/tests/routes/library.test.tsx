@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { errorResponse, fakeApi, jsonResponse, noContent, TV, TV_BASE, withTv } from '../fake.api';
+import { fireEvent } from '@testing-library/react';
 import { renderApp, screen, setupUser, waitFor, within } from '../test.render';
 
 type Item = { contentId: string; categoryId: string; raw: Record<string, unknown> };
@@ -37,7 +38,7 @@ describe('library', () => {
     it('lists the TV’s artwork with its category and matte, marking what’s on screen', async () => {
         fakeTv();
 
-        renderApp(`${TV_BASE}/library`);
+        renderApp(`${TV_BASE}/library?view=list`);
 
         const uploadRow = (await screen.findByText('MY-F0001')).closest('tr')!;
         expect(within(uploadRow).getByText('My Photos')).toBeInTheDocument();
@@ -72,7 +73,7 @@ describe('library', () => {
         const { requests } = fakeTv();
         const user = setupUser();
 
-        renderApp(`${TV_BASE}/library`);
+        renderApp(`${TV_BASE}/library?view=list`);
         await user.click(await screen.findByRole('button', { name: 'Actions for MY-F0001' }));
         await user.click(await screen.findByRole('menuitem', { name: 'Show on TV' }));
 
@@ -148,6 +149,57 @@ describe('library', () => {
 
         expect(await screen.findByText('The TV rejected that')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+    });
+
+    it('shows thumbnails in a grid by default, each loaded lazily from the API', async () => {
+        fakeTv();
+
+        renderApp(`${TV_BASE}/library`);
+
+        const image = await screen.findByRole('img', { name: 'MY-F0001' });
+        expect(image).toHaveAttribute('src', `/api${TV_BASE}/art/MY-F0001/thumbnail`);
+        expect(image).toHaveAttribute('loading', 'lazy');
+        const cards = screen.getAllByTestId('art-card');
+        expect(cards).toHaveLength(2);
+        expect(within(cards[0]!).getByText('Shadowbox, polar')).toBeInTheDocument();
+        expect(await within(cards[1]!).findByText('On screen')).toBeInTheDocument();
+        expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    });
+
+    it('shows a placeholder for a thumbnail that fails to load', async () => {
+        fakeTv();
+
+        renderApp(`${TV_BASE}/library`);
+        fireEvent.error(await screen.findByRole('img', { name: 'MY-F0001' }));
+
+        expect(await screen.findByRole('img', { name: 'No thumbnail for MY-F0001' })).toBeInTheDocument();
+    });
+
+    it('switches between grid and list, keeping the choice and the category in the URL', async () => {
+        fakeTv();
+        const user = setupUser();
+
+        const { router } = renderApp(`${TV_BASE}/library?category=MY-C0002`);
+        await screen.findByRole('img', { name: 'MY-F0001' });
+        await user.click(screen.getByRole('radio', { name: 'List' }));
+
+        expect(await screen.findByRole('table')).toBeInTheDocument();
+        expect(router.state.location.search).toEqual({ category: 'MY-C0002', view: 'list' });
+
+        await user.click(screen.getByRole('radio', { name: 'Grid' }));
+        await waitFor(() => expect(screen.queryByRole('table')).not.toBeInTheDocument());
+        expect(router.state.location.search).toEqual({ category: 'MY-C0002' });
+    });
+
+    it('acts on a piece from its card', async () => {
+        const { requests } = fakeTv();
+        const user = setupUser();
+
+        renderApp(`${TV_BASE}/library`);
+        await user.click(await screen.findByRole('button', { name: 'Actions for MY-F0001' }));
+        await user.click(await screen.findByRole('menuitem', { name: 'Show on TV' }));
+
+        await waitFor(() => expect(writes(requests)).toEqual([expect.objectContaining({ body: { contentId: 'MY-F0001', category: 'MY-C0002' } })]));
     });
 
     it('says so when a category is empty', async () => {

@@ -1,18 +1,22 @@
 import { useState } from 'react';
-import { ActionIcon, Badge, Group, Menu, SegmentedControl, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
-import { IconDots, IconFrame, IconPlayerPlay, IconTrash } from '@tabler/icons-react';
+import { Badge, Card, Group, SegmentedControl, SimpleGrid, Skeleton, Stack, Table, Text, Title } from '@mantine/core';
+import { IconLayoutGrid, IconList } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
-import { Category, type ArtItem } from '../../api/api.client';
+import { Category, tvApi, type ArtItem } from '../../api/api.client';
 import { categoryLabel } from '../../api/category.labels';
 import { matteLabel } from '../../api/mattes';
 import { useSelectArt } from '../../api/tv.mutations';
 import { artListOptions, currentArtOptions } from '../../api/tv.queries';
 import { useTv } from '../../tvs/tv.context';
 import { ErrorAlert } from '../shared/error.alert';
+import { ArtActions } from './art.actions';
+import { ArtThumbnail } from './art.thumbnail';
 import { DeleteModal } from './delete.modal';
 import { MatteModal } from './matte.modal';
 
 export const ALL = 'all';
+
+export type LibraryView = 'grid' | 'list';
 
 const FILTERS = [
     { value: ALL, label: 'All' },
@@ -21,29 +25,100 @@ const FILTERS = [
     { value: Category.Store, label: 'Art Store' },
 ];
 
+const VIEWS = [
+    {
+        value: 'grid',
+        label: (
+            <Group gap={6} wrap="nowrap">
+                <IconLayoutGrid size={16} /> Grid
+            </Group>
+        ),
+    },
+    {
+        value: 'list',
+        label: (
+            <Group gap={6} wrap="nowrap">
+                <IconList size={16} /> List
+            </Group>
+        ),
+    },
+];
+
 const matteOf = (item: ArtItem) => (typeof item.raw.matte_id === 'string' ? item.raw.matte_id : undefined);
 
 type Dialog = { kind: 'matte' | 'delete'; item: ArtItem };
 
-/** The TV's artwork, by category, with what can be done to each piece. */
-export function LibraryPage({ category, onCategoryChange }: { category: string; onCategoryChange: (category: string) => void }) {
+interface LibraryPageProps {
+    category: string;
+    onCategoryChange: (category: string) => void;
+    view: LibraryView;
+    onViewChange: (view: LibraryView) => void;
+}
+
+/** The TV's artwork, by category, as thumbnails or a list, with what can be done to each piece. */
+export function LibraryPage({ category, onCategoryChange, view, onViewChange }: LibraryPageProps) {
     const tv = useTv();
     const art = useQuery(artListOptions(tv.id, category === ALL ? undefined : category));
     const current = useQuery(currentArtOptions(tv.id));
     const selectArt = useSelectArt(tv.id);
     const [dialog, setDialog] = useState<Dialog>();
 
+    const onScreen = (item: ArtItem) => current.data?.contentId === item.contentId;
+    const actions = (item: ArtItem) => (
+        <ArtActions
+            item={item}
+            onShow={() => selectArt.mutate({ contentId: item.contentId, category: item.categoryId })}
+            onChangeMatte={() => setDialog({ kind: 'matte', item })}
+            onDelete={() => setDialog({ kind: 'delete', item })}
+        />
+    );
+    const onScreenBadge = (
+        <Badge size="sm" variant="filled">
+            On screen
+        </Badge>
+    );
+
     return (
         <Stack>
             <Title order={2}>Library on {tv.name}</Title>
-            <SegmentedControl data={FILTERS} value={category} onChange={onCategoryChange} w="fit-content" />
+            <Group justify="space-between">
+                <SegmentedControl data={FILTERS} value={category} onChange={onCategoryChange} />
+                <SegmentedControl aria-label="View" data={VIEWS} value={view} onChange={next => onViewChange(next as LibraryView)} />
+            </Group>
 
             {art.isError && <ErrorAlert error={art.error} />}
             {art.isPending && <Skeleton h={200} />}
             {art.isSuccess && art.data.length === 0 && (
                 <Text c="dimmed">Nothing in {categoryLabel(category === ALL ? undefined : category).toLowerCase()} yet.</Text>
             )}
-            {art.isSuccess && art.data.length > 0 && (
+
+            {art.isSuccess && art.data.length > 0 && view === 'grid' && (
+                <SimpleGrid cols={{ base: 2, sm: 3, lg: 4, xl: 5 }} spacing="md">
+                    {art.data.map(item => (
+                        <Card key={item.contentId} withBorder padding="xs" data-testid="art-card">
+                            <Card.Section>
+                                <ArtThumbnail src={tvApi(tv.id).thumbnailUrl(item.contentId)} alt={item.contentId} />
+                            </Card.Section>
+                            <Group justify="space-between" wrap="nowrap" mt="xs" gap="xs">
+                                <Stack gap={0} style={{ minWidth: 0 }}>
+                                    <Group gap={6} wrap="nowrap">
+                                        <Text ff="monospace" size="sm" truncate>
+                                            {item.contentId}
+                                        </Text>
+                                        {onScreen(item) && onScreenBadge}
+                                    </Group>
+                                    <Text size="xs" c="dimmed" truncate>
+                                        {matteLabel(matteOf(item))}
+                                    </Text>
+                                </Stack>
+                                {actions(item)}
+                            </Group>
+                        </Card>
+                    ))}
+                </SimpleGrid>
+            )}
+
+            {art.isSuccess && art.data.length > 0 && view === 'list' && (
                 <Table highlightOnHover verticalSpacing="sm">
                     <Table.Thead>
                         <Table.Tr>
@@ -59,45 +134,12 @@ export function LibraryPage({ category, onCategoryChange }: { category: string; 
                                 <Table.Td>
                                     <Group gap="xs">
                                         <Text ff="monospace">{item.contentId}</Text>
-                                        {current.data?.contentId === item.contentId && (
-                                            <Badge size="sm" variant="filled">
-                                                On screen
-                                            </Badge>
-                                        )}
+                                        {onScreen(item) && onScreenBadge}
                                     </Group>
                                 </Table.Td>
                                 <Table.Td>{categoryLabel(item.categoryId)}</Table.Td>
                                 <Table.Td>{matteLabel(matteOf(item))}</Table.Td>
-                                <Table.Td>
-                                    <Menu position="bottom-end" withinPortal={false}>
-                                        <Menu.Target>
-                                            <ActionIcon variant="subtle" aria-label={`Actions for ${item.contentId}`}>
-                                                <IconDots size={18} />
-                                            </ActionIcon>
-                                        </Menu.Target>
-                                        <Menu.Dropdown>
-                                            <Menu.Item
-                                                leftSection={<IconPlayerPlay size={16} />}
-                                                onClick={() => selectArt.mutate({ contentId: item.contentId, category: item.categoryId })}
-                                            >
-                                                Show on TV
-                                            </Menu.Item>
-                                            <Menu.Item leftSection={<IconFrame size={16} />} onClick={() => setDialog({ kind: 'matte', item })}>
-                                                Change matte
-                                            </Menu.Item>
-                                            {/* Only uploads are ours to delete; the Art Store's pieces belong to Samsung. */}
-                                            {item.categoryId === Category.MyPhotos && (
-                                                <Menu.Item
-                                                    color="red"
-                                                    leftSection={<IconTrash size={16} />}
-                                                    onClick={() => setDialog({ kind: 'delete', item })}
-                                                >
-                                                    Delete
-                                                </Menu.Item>
-                                            )}
-                                        </Menu.Dropdown>
-                                    </Menu>
-                                </Table.Td>
+                                <Table.Td>{actions(item)}</Table.Td>
                             </Table.Tr>
                         ))}
                     </Table.Tbody>
