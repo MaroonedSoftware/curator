@@ -13,6 +13,21 @@ pnpm --filter @curator/web dev   # this app on :14102
 Vite proxies `/api` to the API and strips the prefix, so the browser stays same-origin. A
 production deployment needs the same: the API reachable at `/api` on the app's origin.
 
+## Pages
+
+| Path       | Does                                                                              |
+| ---------- | --------------------------------------------------------------------------------- |
+| `/`        | Now showing: the artwork on screen, and an art-mode switch                        |
+| `/library` | The TV's art by category (`?category=`), with Show on TV, Change matte and Delete |
+| `/upload`  | Drop a JPEG or PNG (up to 20MB), pick its mattes, and optionally show it at once  |
+| `/status`  | The TV's model, power state and art API version                                   |
+
+The TV doesn't confirm most writes, so pages read its state back afterwards rather than trusting
+the request. Delete is offered only for uploads (My Photos). Mattes are a style and a colour from
+the lists the reference library documents; a matte that doesn't fit the image is refused by the TV.
+
+There are no thumbnails yet: the frame client can't fetch them, so artwork is listed by content id.
+
 ## Layout
 
 ```

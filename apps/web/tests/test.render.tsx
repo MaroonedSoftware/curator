@@ -28,6 +28,6 @@ export function renderApp(path: string, queryClient = createTestQueryClient()): 
 }
 
 /** A user that types a whole string at once rather than pacing keystrokes on real timers. */
-export const setupUser = (): UserEvent => userEvent.setup({ delay: null });
+export const setupUser = (options: Parameters<typeof userEvent.setup>[0] = {}): UserEvent => userEvent.setup({ delay: null, ...options });
 
 export { screen, waitFor, within } from '@testing-library/react';

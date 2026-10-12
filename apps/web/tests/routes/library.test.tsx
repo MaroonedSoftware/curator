@@ -31,7 +31,7 @@ function fakeTv(art: Item[] = [upload, store]) {
     return { state, requests };
 }
 
-const writes = (requests: { method: string }[]) => requests.filter(request => request.method !== 'GET');
+const writes = <T extends { method: string }>(requests: T[]) => requests.filter(request => request.method !== 'GET');
 
 describe('library', () => {
     it('lists the TV’s artwork with its category and matte, marking what’s on screen', async () => {

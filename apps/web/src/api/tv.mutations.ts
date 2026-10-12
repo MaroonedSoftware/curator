@@ -1,6 +1,6 @@
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from './api.client';
+import { api, Category } from './api.client';
 import { describeError } from './api.error';
 import { queryKeys } from './query.keys';
 
@@ -67,6 +67,26 @@ export function useChangeMatte() {
         onSuccess: () => {
             void queryClient.invalidateQueries({ queryKey: queryKeys.allArt });
             void queryClient.invalidateQueries({ queryKey: queryKeys.currentArt });
+        },
+    });
+}
+
+/** Uploads an image, then puts it on screen if asked. Resolves with the TV's content id. */
+export function useUploadArt() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ image, matte, portraitMatte, show }: { image: File; matte: string; portraitMatte: string; show: boolean }) => {
+            const contentId = await api.uploadArt(image, { matte, portraitMatte });
+            if (show) {
+                await api.selectArt(contentId, { show: true, category: Category.MyPhotos });
+            }
+            return contentId;
+        },
+        onError: notifyFailure,
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.allArt });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.currentArt });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.artMode });
         },
     });
 }

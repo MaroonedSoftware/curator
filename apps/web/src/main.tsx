@@ -8,6 +8,7 @@ import { createRouter, RouterProvider } from '@tanstack/react-router';
 import '@fontsource-variable/inter';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/dropzone/styles.css';
 
 import { createQueryClient } from './api/query.client';
 import { routeTree } from './routeTree.gen';
