@@ -61,6 +61,22 @@ export interface ConnectTv {
     name?: string;
 }
 
+/** A named set of pieces on one TV. */
+export interface Album {
+    id: string;
+    name: string;
+    pieceCount: number;
+    /** The album's first piece. Absent for an empty album. */
+    coverContentId?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/** An album with its pieces' content ids, in album order. Ids use `-`, never `_` (MY-F0001). */
+export interface AlbumDetail extends Album {
+    contentIds: string[];
+}
+
 export interface MatteOptions {
     matte?: string;
     portraitMatte?: string;
@@ -166,6 +182,17 @@ export const tvApi = (tvId: string) => {
             if (!response.ok) throw new ApiError(response.status, response.statusText);
             return true;
         },
+
+        albums: async () => (await request<{ items: Album[] }>(`${base}/albums`)).items,
+        album: (albumId: string) => request<AlbumDetail>(`${base}/albums/${encodeURIComponent(albumId)}`),
+        createAlbum: (name: string) => request<Album>(`${base}/albums`, json('POST', { name })),
+        renameAlbum: (albumId: string, name: string) => request<Album>(`${base}/albums/${encodeURIComponent(albumId)}`, json('PATCH', { name })),
+        deleteAlbum: (albumId: string) => request<void>(`${base}/albums/${encodeURIComponent(albumId)}`, { method: 'DELETE' }),
+        /** Appends pieces to the album. Pieces already in it keep their place. */
+        addToAlbum: (albumId: string, contentIds: string[]) =>
+            request<void>(`${base}/albums/${encodeURIComponent(albumId)}/pieces`, json('PUT', { contentIds })),
+        removeFromAlbum: (albumId: string, contentId: string) =>
+            request<void>(`${base}/albums/${encodeURIComponent(albumId)}/pieces/${encodeURIComponent(contentId)}`, { method: 'DELETE' }),
 
         /** Resolves with the content id the TV assigned. */
         uploadArt: async (image: Blob, opts: MatteOptions = {}) =>

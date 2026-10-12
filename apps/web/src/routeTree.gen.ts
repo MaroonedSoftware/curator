@@ -8,189 +8,192 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as TvsIndexRouteImport } from './routes/tvs.index'
-import { Route as TvsTvIdRouteImport } from './routes/tvs.$tvId'
-import { Route as TvsTvIdIndexRouteImport } from './routes/tvs.$tvId.index'
-import { Route as TvsTvIdLibraryRouteImport } from './routes/tvs.$tvId.library'
-import { Route as TvsTvIdStatusRouteImport } from './routes/tvs.$tvId.status'
-import { Route as TvsTvIdUploadRouteImport } from './routes/tvs.$tvId.upload'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as IndexRouteImport } from './routes/index';
+import { Route as TvsIndexRouteImport } from './routes/tvs.index';
+import { Route as TvsTvIdRouteImport } from './routes/tvs.$tvId';
+import { Route as TvsTvIdIndexRouteImport } from './routes/tvs.$tvId.index';
+import { Route as TvsTvIdLibraryRouteImport } from './routes/tvs.$tvId.library';
+import { Route as TvsTvIdStatusRouteImport } from './routes/tvs.$tvId.status';
+import { Route as TvsTvIdUploadRouteImport } from './routes/tvs.$tvId.upload';
+import { Route as TvsTvIdAlbumsIndexRouteImport } from './routes/tvs.$tvId.albums.index';
 
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+    id: '/',
+    path: '/',
+    getParentRoute: () => rootRouteImport,
+} as any);
 const TvsIndexRoute = TvsIndexRouteImport.update({
-  id: '/tvs/',
-  path: '/tvs/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+    id: '/tvs/',
+    path: '/tvs/',
+    getParentRoute: () => rootRouteImport,
+} as any);
 const TvsTvIdRoute = TvsTvIdRouteImport.update({
-  id: '/tvs/$tvId',
-  path: '/tvs/$tvId',
-  getParentRoute: () => rootRouteImport,
-} as any)
+    id: '/tvs/$tvId',
+    path: '/tvs/$tvId',
+    getParentRoute: () => rootRouteImport,
+} as any);
 const TvsTvIdIndexRoute = TvsTvIdIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => TvsTvIdRoute,
-} as any)
+    id: '/',
+    path: '/',
+    getParentRoute: () => TvsTvIdRoute,
+} as any);
 const TvsTvIdLibraryRoute = TvsTvIdLibraryRouteImport.update({
-  id: '/library',
-  path: '/library',
-  getParentRoute: () => TvsTvIdRoute,
-} as any)
+    id: '/library',
+    path: '/library',
+    getParentRoute: () => TvsTvIdRoute,
+} as any);
 const TvsTvIdStatusRoute = TvsTvIdStatusRouteImport.update({
-  id: '/status',
-  path: '/status',
-  getParentRoute: () => TvsTvIdRoute,
-} as any)
+    id: '/status',
+    path: '/status',
+    getParentRoute: () => TvsTvIdRoute,
+} as any);
 const TvsTvIdUploadRoute = TvsTvIdUploadRouteImport.update({
-  id: '/upload',
-  path: '/upload',
-  getParentRoute: () => TvsTvIdRoute,
-} as any)
+    id: '/upload',
+    path: '/upload',
+    getParentRoute: () => TvsTvIdRoute,
+} as any);
+const TvsTvIdAlbumsIndexRoute = TvsTvIdAlbumsIndexRouteImport.update({
+    id: '/albums/',
+    path: '/albums/',
+    getParentRoute: () => TvsTvIdRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/tvs/$tvId': typeof TvsTvIdRouteWithChildren
-  '/tvs/': typeof TvsIndexRoute
-  '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute
-  '/tvs/$tvId/status': typeof TvsTvIdStatusRoute
-  '/tvs/$tvId/upload': typeof TvsTvIdUploadRoute
-  '/tvs/$tvId/': typeof TvsTvIdIndexRoute
+    '/': typeof IndexRoute;
+    '/tvs/$tvId': typeof TvsTvIdRouteWithChildren;
+    '/tvs/': typeof TvsIndexRoute;
+    '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute;
+    '/tvs/$tvId/status': typeof TvsTvIdStatusRoute;
+    '/tvs/$tvId/upload': typeof TvsTvIdUploadRoute;
+    '/tvs/$tvId/': typeof TvsTvIdIndexRoute;
+    '/tvs/$tvId/albums/': typeof TvsTvIdAlbumsIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/tvs': typeof TvsIndexRoute
-  '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute
-  '/tvs/$tvId/status': typeof TvsTvIdStatusRoute
-  '/tvs/$tvId/upload': typeof TvsTvIdUploadRoute
-  '/tvs/$tvId': typeof TvsTvIdIndexRoute
+    '/': typeof IndexRoute;
+    '/tvs': typeof TvsIndexRoute;
+    '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute;
+    '/tvs/$tvId/status': typeof TvsTvIdStatusRoute;
+    '/tvs/$tvId/upload': typeof TvsTvIdUploadRoute;
+    '/tvs/$tvId': typeof TvsTvIdIndexRoute;
+    '/tvs/$tvId/albums': typeof TvsTvIdAlbumsIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/tvs/$tvId': typeof TvsTvIdRouteWithChildren
-  '/tvs/': typeof TvsIndexRoute
-  '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute
-  '/tvs/$tvId/status': typeof TvsTvIdStatusRoute
-  '/tvs/$tvId/upload': typeof TvsTvIdUploadRoute
-  '/tvs/$tvId/': typeof TvsTvIdIndexRoute
+    __root__: typeof rootRouteImport;
+    '/': typeof IndexRoute;
+    '/tvs/$tvId': typeof TvsTvIdRouteWithChildren;
+    '/tvs/': typeof TvsIndexRoute;
+    '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute;
+    '/tvs/$tvId/status': typeof TvsTvIdStatusRoute;
+    '/tvs/$tvId/upload': typeof TvsTvIdUploadRoute;
+    '/tvs/$tvId/': typeof TvsTvIdIndexRoute;
+    '/tvs/$tvId/albums/': typeof TvsTvIdAlbumsIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/tvs/$tvId'
-    | '/tvs/'
-    | '/tvs/$tvId/library'
-    | '/tvs/$tvId/status'
-    | '/tvs/$tvId/upload'
-    | '/tvs/$tvId/'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/tvs'
-    | '/tvs/$tvId/library'
-    | '/tvs/$tvId/status'
-    | '/tvs/$tvId/upload'
-    | '/tvs/$tvId'
-  id:
-    | '__root__'
-    | '/'
-    | '/tvs/$tvId'
-    | '/tvs/'
-    | '/tvs/$tvId/library'
-    | '/tvs/$tvId/status'
-    | '/tvs/$tvId/upload'
-    | '/tvs/$tvId/'
-  fileRoutesById: FileRoutesById
+    fileRoutesByFullPath: FileRoutesByFullPath;
+    fullPaths: '/' | '/tvs/$tvId' | '/tvs/' | '/tvs/$tvId/library' | '/tvs/$tvId/status' | '/tvs/$tvId/upload' | '/tvs/$tvId/' | '/tvs/$tvId/albums/';
+    fileRoutesByTo: FileRoutesByTo;
+    to: '/' | '/tvs' | '/tvs/$tvId/library' | '/tvs/$tvId/status' | '/tvs/$tvId/upload' | '/tvs/$tvId' | '/tvs/$tvId/albums';
+    id:
+        | '__root__'
+        | '/'
+        | '/tvs/$tvId'
+        | '/tvs/'
+        | '/tvs/$tvId/library'
+        | '/tvs/$tvId/status'
+        | '/tvs/$tvId/upload'
+        | '/tvs/$tvId/'
+        | '/tvs/$tvId/albums/';
+    fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  TvsTvIdRoute: typeof TvsTvIdRouteWithChildren
-  TvsIndexRoute: typeof TvsIndexRoute
+    IndexRoute: typeof IndexRoute;
+    TvsTvIdRoute: typeof TvsTvIdRouteWithChildren;
+    TvsIndexRoute: typeof TvsIndexRoute;
 }
 
 declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+    interface FileRoutesByPath {
+        '/': {
+            id: '/';
+            path: '/';
+            fullPath: '/';
+            preLoaderRoute: typeof IndexRouteImport;
+            parentRoute: typeof rootRouteImport;
+        };
+        '/tvs/': {
+            id: '/tvs/';
+            path: '/tvs';
+            fullPath: '/tvs/';
+            preLoaderRoute: typeof TvsIndexRouteImport;
+            parentRoute: typeof rootRouteImport;
+        };
+        '/tvs/$tvId': {
+            id: '/tvs/$tvId';
+            path: '/tvs/$tvId';
+            fullPath: '/tvs/$tvId';
+            preLoaderRoute: typeof TvsTvIdRouteImport;
+            parentRoute: typeof rootRouteImport;
+        };
+        '/tvs/$tvId/': {
+            id: '/tvs/$tvId/';
+            path: '/';
+            fullPath: '/tvs/$tvId/';
+            preLoaderRoute: typeof TvsTvIdIndexRouteImport;
+            parentRoute: typeof TvsTvIdRoute;
+        };
+        '/tvs/$tvId/library': {
+            id: '/tvs/$tvId/library';
+            path: '/library';
+            fullPath: '/tvs/$tvId/library';
+            preLoaderRoute: typeof TvsTvIdLibraryRouteImport;
+            parentRoute: typeof TvsTvIdRoute;
+        };
+        '/tvs/$tvId/status': {
+            id: '/tvs/$tvId/status';
+            path: '/status';
+            fullPath: '/tvs/$tvId/status';
+            preLoaderRoute: typeof TvsTvIdStatusRouteImport;
+            parentRoute: typeof TvsTvIdRoute;
+        };
+        '/tvs/$tvId/upload': {
+            id: '/tvs/$tvId/upload';
+            path: '/upload';
+            fullPath: '/tvs/$tvId/upload';
+            preLoaderRoute: typeof TvsTvIdUploadRouteImport;
+            parentRoute: typeof TvsTvIdRoute;
+        };
+        '/tvs/$tvId/albums/': {
+            id: '/tvs/$tvId/albums/';
+            path: '/albums';
+            fullPath: '/tvs/$tvId/albums/';
+            preLoaderRoute: typeof TvsTvIdAlbumsIndexRouteImport;
+            parentRoute: typeof TvsTvIdRoute;
+        };
     }
-    '/tvs/': {
-      id: '/tvs/'
-      path: '/tvs'
-      fullPath: '/tvs/'
-      preLoaderRoute: typeof TvsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tvs/$tvId': {
-      id: '/tvs/$tvId'
-      path: '/tvs/$tvId'
-      fullPath: '/tvs/$tvId'
-      preLoaderRoute: typeof TvsTvIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tvs/$tvId/': {
-      id: '/tvs/$tvId/'
-      path: '/'
-      fullPath: '/tvs/$tvId/'
-      preLoaderRoute: typeof TvsTvIdIndexRouteImport
-      parentRoute: typeof TvsTvIdRoute
-    }
-    '/tvs/$tvId/library': {
-      id: '/tvs/$tvId/library'
-      path: '/library'
-      fullPath: '/tvs/$tvId/library'
-      preLoaderRoute: typeof TvsTvIdLibraryRouteImport
-      parentRoute: typeof TvsTvIdRoute
-    }
-    '/tvs/$tvId/status': {
-      id: '/tvs/$tvId/status'
-      path: '/status'
-      fullPath: '/tvs/$tvId/status'
-      preLoaderRoute: typeof TvsTvIdStatusRouteImport
-      parentRoute: typeof TvsTvIdRoute
-    }
-    '/tvs/$tvId/upload': {
-      id: '/tvs/$tvId/upload'
-      path: '/upload'
-      fullPath: '/tvs/$tvId/upload'
-      preLoaderRoute: typeof TvsTvIdUploadRouteImport
-      parentRoute: typeof TvsTvIdRoute
-    }
-  }
 }
 
 interface TvsTvIdRouteChildren {
-  TvsTvIdLibraryRoute: typeof TvsTvIdLibraryRoute
-  TvsTvIdStatusRoute: typeof TvsTvIdStatusRoute
-  TvsTvIdUploadRoute: typeof TvsTvIdUploadRoute
-  TvsTvIdIndexRoute: typeof TvsTvIdIndexRoute
+    TvsTvIdLibraryRoute: typeof TvsTvIdLibraryRoute;
+    TvsTvIdStatusRoute: typeof TvsTvIdStatusRoute;
+    TvsTvIdUploadRoute: typeof TvsTvIdUploadRoute;
+    TvsTvIdIndexRoute: typeof TvsTvIdIndexRoute;
+    TvsTvIdAlbumsIndexRoute: typeof TvsTvIdAlbumsIndexRoute;
 }
 
 const TvsTvIdRouteChildren: TvsTvIdRouteChildren = {
-  TvsTvIdLibraryRoute: TvsTvIdLibraryRoute,
-  TvsTvIdStatusRoute: TvsTvIdStatusRoute,
-  TvsTvIdUploadRoute: TvsTvIdUploadRoute,
-  TvsTvIdIndexRoute: TvsTvIdIndexRoute,
-}
+    TvsTvIdLibraryRoute: TvsTvIdLibraryRoute,
+    TvsTvIdStatusRoute: TvsTvIdStatusRoute,
+    TvsTvIdUploadRoute: TvsTvIdUploadRoute,
+    TvsTvIdIndexRoute: TvsTvIdIndexRoute,
+    TvsTvIdAlbumsIndexRoute: TvsTvIdAlbumsIndexRoute,
+};
 
-const TvsTvIdRouteWithChildren =
-  TvsTvIdRoute._addFileChildren(TvsTvIdRouteChildren)
+const TvsTvIdRouteWithChildren = TvsTvIdRoute._addFileChildren(TvsTvIdRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  TvsTvIdRoute: TvsTvIdRouteWithChildren,
-  TvsIndexRoute: TvsIndexRoute,
-}
-export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+    IndexRoute: IndexRoute,
+    TvsTvIdRoute: TvsTvIdRouteWithChildren,
+    TvsIndexRoute: TvsIndexRoute,
+};
+export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>();

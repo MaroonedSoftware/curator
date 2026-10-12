@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react';
 import { AppShell, Burger, Divider, Group, NavLink, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconActivity, IconDeviceTv, IconLibraryPhoto, IconPhotoHeart, IconUpload, type Icon } from '@tabler/icons-react';
+import { IconActivity, IconAlbum, IconDeviceTv, IconLibraryPhoto, IconPhotoHeart, IconUpload, type Icon } from '@tabler/icons-react';
 import { Link, useLocation, useParams } from '@tanstack/react-router';
 import { ApiStatus } from './api.status';
 import { TvSwitcher } from './tv.switcher';
 
 interface TvPage {
     /** The path under /tvs/$tvId. */
-    path: '' | '/library' | '/upload' | '/status';
+    path: '' | '/library' | '/albums' | '/upload' | '/status';
     label: string;
     icon: Icon;
 }
@@ -16,6 +16,7 @@ interface TvPage {
 const TV_PAGES: TvPage[] = [
     { path: '', label: 'Now showing', icon: IconPhotoHeart },
     { path: '/library', label: 'Library', icon: IconLibraryPhoto },
+    { path: '/albums', label: 'Albums', icon: IconAlbum },
     { path: '/upload', label: 'Upload', icon: IconUpload },
     { path: '/status', label: 'Status', icon: IconActivity },
 ];
@@ -53,7 +54,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
                                 activeOptions={{ exact: true }}
                                 label={page.label}
                                 leftSection={<page.icon size={18} stroke={1.5} />}
-                                active={pathname === href || (page.path === '' && pathname === `${href}/`)}
+                                // A page's own sub-pages (an album under Albums) keep it marked, but Now showing has only itself.
+                                active={pathname === href || pathname === `${href}/` || (page.path !== '' && pathname.startsWith(`${href}/`))}
                                 onClick={close}
                             />
                         );

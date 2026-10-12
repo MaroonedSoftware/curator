@@ -12,4 +12,7 @@ export const queryKeys = {
     hasOriginal: (tvId: string, contentId: string) => ['tvs', tvId, 'art', 'original', contentId] as const,
     currentArt: (tvId: string) => ['tvs', tvId, 'art', 'current'] as const,
     artMode: (tvId: string) => ['tvs', tvId, 'art-mode'] as const,
+    /** The TV's albums. Invalidating it invalidates every album's detail too. */
+    albums: (tvId: string) => ['tvs', tvId, 'albums'] as const,
+    album: (tvId: string, albumId: string) => ['tvs', tvId, 'albums', albumId] as const,
 };
