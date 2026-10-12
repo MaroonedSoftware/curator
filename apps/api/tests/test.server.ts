@@ -7,6 +7,7 @@ import type { DB } from '../src/modules/data/db.js';
 import { FrameClientFactoryToken, type FrameClientFactory, type TvAddress } from '../src/modules/frame/frame.client.registry.js';
 import { FrameClientToken } from '../src/modules/frame/frame.tokens.js';
 import type { NewTv, TvRow } from '../src/modules/tvs/tv.repository.js';
+import { SsdpSearchToken, type SsdpResponse, type SsdpSearch } from '../src/modules/discovery/ssdp.search.js';
 import { modules } from '../src/modules/modules.js';
 import { buildServer } from '../src/server/setup.server.js';
 import { FakeFrameClient } from './fake.frame.client.js';
@@ -56,6 +57,12 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
     const prepareTvs = (fn: (client: FakeFrameClient) => void) => {
         prepare = fn;
     };
+    /** What the network answers to an SSDP search. Nothing, unless a test says otherwise. */
+    const ssdp: { responses: SsdpResponse[]; searches: Parameters<SsdpSearch>[0][] } = { responses: [], searches: [] };
+    const search: SsdpSearch = async options => {
+        ssdp.searches.push(options);
+        return ssdp.responses;
+    };
     const fakeTv: ServerKitModule = {
         name: 'FakeTv',
         setup: async registry => {
@@ -63,6 +70,8 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
             registry.register(FrameClientToken).useInstance(tv);
             registry.remove(FrameClientFactoryToken);
             registry.register(FrameClientFactoryToken).useInstance(factory);
+            registry.remove(SsdpSearchToken);
+            registry.register(SsdpSearchToken).useValue(search);
         },
     };
     const testModules = [...modules, fakeTv];
@@ -93,5 +102,5 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
         return db.insertInto('tvs').values(tv).returningAll().executeTakeFirstOrThrow();
     };
 
-    return { app: builder.app, container, tv, tvs, built, prepareTvs, db, addTv, dbName, close };
+    return { app: builder.app, container, tv, tvs, built, prepareTvs, ssdp, db, addTv, dbName, close };
 };

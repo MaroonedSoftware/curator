@@ -2,6 +2,7 @@ import { httpError } from '@maroonedsoftware/errors';
 import type { ZodTypeProvider } from '@maroonedsoftware/fastify/zod';
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { DiscoveryService } from '../modules/discovery/discovery.service.js';
 import type { TvRow } from '../modules/tvs/tv.repository.js';
 import { TvService } from '../modules/tvs/tv.service.js';
 import { frameRoutes } from './tv.routes.js';
@@ -59,6 +60,29 @@ export const TvsRoutes: FastifyPluginAsync = async instance => {
     app.get('/tvs', { schema: { response: { 200: z.object({ items: z.array(Tv) }) } } }, async request => ({
         items: (await request.container.get(TvService).list()).map(toTv),
     }));
+
+    // Static, so it wins over /tvs/:tvId.
+    app.get(
+        '/tvs/discover',
+        {
+            schema: {
+                response: {
+                    200: z.object({
+                        items: z.array(
+                            z.object({
+                                host: z.string(),
+                                port: z.number().int(),
+                                name: z.string().optional(),
+                                model: z.string().optional(),
+                                tvId: z.uuid().optional(),
+                            }),
+                        ),
+                    }),
+                },
+            },
+        },
+        async request => ({ items: await request.container.get(DiscoveryService).discover() }),
+    );
 
     app.post(
         '/tvs',

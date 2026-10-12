@@ -31,6 +31,12 @@ const ApiConfigSchema = z.object({
             debug: z.stringbool().or(z.boolean()).default(false),
         })
         .prefault({}),
+    discovery: z
+        .object({
+            /** How long `GET /tvs/discover` listens for TVs to answer. */
+            timeoutMs: z.coerce.number().int().min(500).max(15_000).default(3000),
+        })
+        .prefault({}),
     tv: z.object({
         /** The Frame's address on the LAN. Give it a DHCP reservation. */
         host: z.string().min(1),

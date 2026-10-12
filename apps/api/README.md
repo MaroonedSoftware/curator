@@ -78,6 +78,12 @@ pairing succeeds. It answers 409 (with `details.tvId`) for an address already ad
 Samsung TV that isn't a Frame, 503 when nothing answers, and 502 when the prompt is declined or
 times out. `port` defaults to 8002; `name` to the name the TV reports.
 
+`GET /tvs/discover` sends an SSDP search (UDP multicast to 239.255.255.250:1900) for Samsung TVs,
+listens for `discovery.timeoutMs` (3 seconds by default), then asks each one that answered whether
+it is a Frame. Other Samsung TVs, and devices that don't answer on 8002, are left out. `tvId` is
+set on a Frame that is already added. Multicast doesn't cross subnets and is often blocked between
+Docker and the LAN, so add a TV by address when it isn't found.
+
 A TV's pairing token is stored in its row and never returned. `paired: false` means the TV must be
 paired again. An unknown `tvId` is a 404, a malformed one a 400.
 
