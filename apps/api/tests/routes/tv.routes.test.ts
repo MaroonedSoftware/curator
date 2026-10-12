@@ -6,7 +6,7 @@ describe('tv read routes', () => {
     let server: Awaited<ReturnType<typeof createTestServer>>;
 
     beforeAll(async () => {
-        server = await createTestServer();
+        server = await createTestServer(import.meta.url);
     });
 
     beforeEach(() => {
@@ -87,7 +87,7 @@ describe('tv write routes', () => {
     let server: Awaited<ReturnType<typeof createTestServer>>;
 
     beforeAll(async () => {
-        server = await createTestServer();
+        server = await createTestServer(import.meta.url);
     });
 
     beforeEach(() => {
@@ -186,7 +186,7 @@ describe('tv upload', () => {
     const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
 
     beforeAll(async () => {
-        server = await createTestServer();
+        server = await createTestServer(import.meta.url);
     });
 
     beforeEach(() => {
@@ -292,7 +292,7 @@ describe('tv errors', () => {
     let server: Awaited<ReturnType<typeof createTestServer>>;
 
     beforeAll(async () => {
-        server = await createTestServer();
+        server = await createTestServer(import.meta.url);
     });
 
     afterAll(async () => {

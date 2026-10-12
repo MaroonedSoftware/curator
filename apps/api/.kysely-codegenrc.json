@@ -1,0 +1,22 @@
+{
+    "camelCase": true,
+    "customImports": {
+        "DateTime": "luxon"
+    },
+    "dateParser": "timestamp",
+    "defaultSchemas": ["public"],
+    "dialect": "postgres",
+    "excludePattern": "public.schema_migrations",
+    "logLevel": "warn",
+    "numericParser": "string",
+    "outFile": "./src/modules/data/kysely.ts",
+    "runtimeEnums": false,
+    "singularize": false,
+    "typeMapping": {
+        "timestamptz": "DateTime",
+        "int8": "bigint"
+    },
+    "typeOnlyImports": true,
+    "url": "env(DATABASE_URL)",
+    "verify": false
+}

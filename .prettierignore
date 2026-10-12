@@ -4,3 +4,6 @@ pnpm-lock.yaml
 
 # TanStack Router codegen
 **/routeTree.gen.ts
+
+# kysely-codegen output
+apps/api/src/modules/data/kysely.ts

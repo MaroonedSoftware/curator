@@ -10,6 +10,19 @@ const ApiConfigSchema = z.object({
         /** Comma-separated browser origins allowed by CORS. Empty allows none. */
         corsOrigins: z.string().default(''),
     }),
+    database: z.object({
+        host: z.string().min(1),
+        port: port.default(5432),
+        user: z.string().min(1),
+        password: z.string(),
+        name: z.string().min(1),
+        pool: z
+            .object({
+                max: z.coerce.number().int().positive().default(5),
+                connectionTimeoutMs: z.coerce.number().int().positive().default(10_000),
+            })
+            .prefault({}),
+    }),
     tv: z.object({
         /** The Frame's address on the LAN. Give it a DHCP reservation. */
         host: z.string().min(1),

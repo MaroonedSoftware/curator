@@ -5,7 +5,7 @@ describe('health', () => {
     let server: Awaited<ReturnType<typeof createTestServer>>;
 
     beforeAll(async () => {
-        server = await createTestServer();
+        server = await createTestServer(import.meta.url);
     });
 
     afterAll(async () => {

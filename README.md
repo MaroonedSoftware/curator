@@ -20,6 +20,8 @@ packages/
 
 ```
 pnpm install
+pnpm db:up          # Postgres for development and tests (docker compose)
+pnpm migrate:up     # apply apps/api/data/migrations
 pnpm build          # tsup + declarations for every package
 pnpm typecheck
 pnpm lint
@@ -29,17 +31,19 @@ pnpm --filter @curator/api dev   # the API on :14100, restarting on change
 pnpm --filter @curator/web dev   # the web app on :14102, proxying /api to the API
 ```
 
-Node 26+ (`.nvmrc`), pnpm 11.
+Node 26+ (`.nvmrc`), pnpm 11, Docker for Postgres. `pnpm db:reset` empties the development database and re-migrates it.
 
 ## Ports
 
 Curator owns 14100-14199 locally; no other project under `~/projects` uses that block.
 
-| Port  | What                                         |
-| ----- | -------------------------------------------- |
-| 14100 | API (`apps/api`, `server.port`)              |
-| 14102 | Web dev server (`apps/web`, proxies `/api`)  |
-| 14103 | Web `vite preview`                           |
-| 14180 | Fake TV (`pnpm fake:tv` in `packages/frame`) |
+| Port  | What                                                  |
+| ----- | ----------------------------------------------------- |
+| 14100 | API (`apps/api`, `server.port`)                       |
+| 14102 | Web dev server (`apps/web`, proxies `/api`)           |
+| 14103 | Web `vite preview`                                    |
+| 14132 | Postgres for development (`curator-db`)               |
+| 14133 | Postgres for the API tests (`curator-db-test`, tmpfs) |
+| 14180 | Fake TV (`pnpm fake:tv` in `packages/frame`)          |
 
 The real TV listens on 8002 (and 8001 for REST) on its own address.

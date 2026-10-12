@@ -1,0 +1,49 @@
+# Local development services. Ports sit in curator's 141xx block (see the README's Ports table),
+# so this stack runs alongside ats (14xxx below 14100), fintech and deadair without collisions.
+name: curator
+
+services:
+    db:
+        image: postgres:17
+        restart: unless-stopped
+        container_name: curator-db
+        ports:
+            - '14132:5432'
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: curator
+        volumes:
+            - curator-db:/var/lib/postgresql/data
+        healthcheck:
+            test: ['CMD', 'pg_isready', '-U', 'postgres', '-d', 'curator']
+            interval: 5s
+            timeout: 5s
+            start_period: 10s
+            retries: 5
+
+    # Postgres for the API test suite. Data lives in tmpfs and durability is off: never point
+    # anything you care about at this.
+    db-test:
+        image: postgres:17
+        restart: unless-stopped
+        container_name: curator-db-test
+        ports:
+            - '14133:5432'
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres-test
+            POSTGRES_DB: curator-test
+        tmpfs:
+            - /var/lib/postgresql/data
+        command: ['postgres', '-c', 'fsync=off', '-c', 'synchronous_commit=off', '-c', 'full_page_writes=off']
+        healthcheck:
+            test: ['CMD', 'pg_isready', '-U', 'postgres', '-d', 'curator-test']
+            interval: 5s
+            timeout: 5s
+            start_period: 10s
+            retries: 5
+
+# A named volume, so the paired TVs survive `docker compose down`. `pnpm db:reset` removes it.
+volumes:
+    curator-db:

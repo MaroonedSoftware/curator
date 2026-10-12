@@ -6,6 +6,14 @@ server:
     # Browser origins allowed by CORS, comma-separated.
     corsOrigins: http://localhost:14102
 
+# Postgres from docker-compose.yml (`pnpm db:up` at the repo root).
+database:
+    host: localhost
+    port: 14132
+    user: postgres
+    password: postgres
+    name: curator
+
 tv:
     # The Frame's LAN address. Set it in appconfig.local.yaml, or export CURATOR_TV_HOST.
     host: ${env:CURATOR_TV_HOST}

@@ -13,11 +13,11 @@ describe('FrameModule', () => {
     });
 
     it('refuses to boot without a TV host', async () => {
-        await expect(buildServer(testConfig({ tv: {} }), silentLogger)).rejects.toThrow(/tv\.host/);
+        await expect(buildServer(testConfig(undefined, { tv: {} }), silentLogger)).rejects.toThrow(/tv\.host/);
     });
 
     it('closes the client on shutdown', async () => {
-        const server = await createTestServer();
+        const server = await createTestServer(import.meta.url);
 
         await server.close();
 
