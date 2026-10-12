@@ -30,3 +30,16 @@ pnpm --filter @curator/web dev   # the web app on :14102, proxying /api to the A
 ```
 
 Node 26+ (`.nvmrc`), pnpm 11.
+
+## Ports
+
+Curator owns 14100-14199 locally; no other project under `~/projects` uses that block.
+
+| Port  | What                                         |
+| ----- | -------------------------------------------- |
+| 14100 | API (`apps/api`, `server.port`)              |
+| 14102 | Web dev server (`apps/web`, proxies `/api`)  |
+| 14103 | Web `vite preview`                           |
+| 14180 | Fake TV (`pnpm fake:tv` in `packages/frame`) |
+
+The real TV listens on 8002 (and 8001 for REST) on its own address.

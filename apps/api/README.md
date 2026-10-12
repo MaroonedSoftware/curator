@@ -39,7 +39,7 @@ or as `CURATOR_TV_HOST`. The first request that reaches the TV pops a pairing pr
 it and the token is kept in `.data/tv-token.txt`. `tv.debug: true` logs every frame on the wire.
 
 To run without a TV, start the fake one (`pnpm fake:tv` in `packages/frame`) and point the API at
-it with `tv.host: 127.0.0.1` and `tv.port: 18002`.
+it with `tv.host: 127.0.0.1` and `tv.port: 14180`.
 
 There is no authentication: the API is meant for the home network the TV sits on.
 

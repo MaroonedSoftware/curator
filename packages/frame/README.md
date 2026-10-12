@@ -13,7 +13,7 @@ src/
   pyjson.ts                  Python-style JSON, so wire traffic matches the reference byte for byte
 scripts/
   frame.probe.ts             run against the real TV
-  fake.tv.serve.ts           run the fake TV on 127.0.0.1:18002 for the probe
+  fake.tv.serve.ts           run the fake TV on 127.0.0.1:14180 for the probe
 tests/
   fake.tv.ts                 fake TV speaking the protocol, used by the tests
   samsung.frame.client.test.ts
@@ -31,7 +31,7 @@ pnpm probe 192.168.1.50 --debug    # print every frame on the wire
 
 The token is saved to `packages/frame/.data/tv-token.txt`. Give the TV a DHCP reservation.
 
-To exercise the probe without a TV, run `pnpm fake:tv` in one shell and `pnpm probe 127.0.0.1 --port=18002 --insecure --upload` in another.
+To exercise the probe without a TV, run `pnpm fake:tv` in one shell and `pnpm probe 127.0.0.1 --port=14180 --insecure --upload` in another.
 
 ## When it breaks
 
