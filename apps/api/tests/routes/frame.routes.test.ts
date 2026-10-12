@@ -362,3 +362,56 @@ describe('a TV’s failures', () => {
         expect(response.json()).toEqual({ statusCode: 500, message: 'Internal Server Error' });
     });
 });
+
+describe('a TV’s thumbnails', () => {
+    let server: Awaited<ReturnType<typeof createTvTestServer>>;
+
+    beforeAll(async () => {
+        server = await createTvTestServer(import.meta.url);
+    });
+
+    beforeEach(() => {
+        server.tv.calls.length = 0;
+    });
+
+    afterAll(async () => {
+        await server.close();
+    });
+
+    it('GET …/art/:contentId/thumbnail answers the image, cacheable by the browser', async () => {
+        const response = await server.app.inject({ method: 'GET', url: `${server.base}/art/MY-F0001/thumbnail` });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.headers['content-type']).toBe('image/jpeg');
+        expect(response.headers['cache-control']).toContain('immutable');
+        expect(response.rawPayload.toString()).toBe('thumb:MY-F0001');
+    });
+
+    it('asks the TV once for a page’s worth of thumbnails requested together, then serves them from memory', async () => {
+        const ids = ['SAM-S0001', 'MY-F0001'];
+        const first = await Promise.all(ids.map(id => server.app.inject({ method: 'GET', url: `${server.base}/art/${id}/thumbnail` })));
+        const again = await server.app.inject({ method: 'GET', url: `${server.base}/art/SAM-S0001/thumbnail` });
+
+        expect(first.map(response => response.statusCode)).toEqual([200, 200]);
+        expect(again.statusCode).toBe(200);
+        const fetched = server.tv.calls.filter(call => call.method === 'thumbnails').flatMap(call => call.args[0] as string[]);
+        // MY-F0001 was cached by the previous test; only SAM-S0001 reaches the TV, once.
+        expect(fetched).toEqual(['SAM-S0001']);
+    });
+
+    it('answers 404 for a piece the TV has no thumbnail for', async () => {
+        const response = await server.app.inject({ method: 'GET', url: `${server.base}/art/MY-F9999/thumbnail` });
+
+        expect(response.statusCode).toBe(404);
+    });
+
+    it('answers 503 when the TV is unreachable', async () => {
+        server.tv.failNext = new FrameConnectionError('cannot reach TV');
+
+        const response = await server.app.inject({ method: 'GET', url: `${server.base}/art/MY-F0001%2Fx/thumbnail` });
+        const unreachable = await server.app.inject({ method: 'GET', url: `${server.base}/art/MY-F0002/thumbnail` });
+
+        expect(response.statusCode).toBe(400);
+        expect(unreachable.statusCode).toBe(503);
+    });
+});

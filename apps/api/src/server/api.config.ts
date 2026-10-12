@@ -29,6 +29,8 @@ const ApiConfigSchema = z.object({
             clientName: z.string().min(1).default('Curator'),
             /** Log every frame on the wire, for every TV. Noisy; for chasing protocol trouble. */
             debug: z.stringbool().or(z.boolean()).default(false),
+            /** Memory for thumbnails across every TV. A thumbnail is tens of kilobytes. */
+            thumbnailCacheMegabytes: z.coerce.number().int().min(1).max(4096).default(64),
         })
         .prefault({}),
     discovery: z

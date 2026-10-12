@@ -89,6 +89,6 @@ export class TvService {
     /** The TV's own endpoints, through its client. 404 for a TV that isn't there. */
     async frameFor(id: string): Promise<FrameService> {
         const tv = await this.tvs.get(id);
-        return new FrameService(this.clients.clientFor(tv));
+        return new FrameService(this.clients.clientFor(tv), this.clients.thumbnailsFor(tv));
     }
 }

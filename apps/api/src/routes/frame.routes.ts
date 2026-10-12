@@ -79,6 +79,15 @@ const frameEndpoints: FastifyPluginAsync = async instance => {
         async request => ({ items: await frameOf(request).list(request.query.category) }),
     );
 
+    app.get('/art/:contentId/thumbnail', { schema: { params: ContentIdParams } }, async (request, reply) => {
+        const thumbnail = await frameOf(request).thumbnail(request.params.contentId);
+        // A content id names one image for good, so the browser may keep it.
+        return reply
+            .type(thumbnail.fileType === 'png' ? 'image/png' : 'image/jpeg')
+            .header('cache-control', 'private, max-age=604800, immutable')
+            .send(thumbnail.data);
+    });
+
     app.get('/art/current', { schema: { response: { 200: CurrentArt } } }, async request => frameOf(request).current());
 
     app.get('/art-mode', { schema: { response: { 200: z.object({ on: z.boolean() }) } } }, async request => ({

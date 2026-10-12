@@ -93,18 +93,23 @@ paired again. An unknown `tvId` is a 404, a malformed one a 400.
 
 Under `/tvs/:tvId`, each TV through its own client:
 
-| Method | Path                         | Body / answers                                                        |
-| ------ | ---------------------------- | --------------------------------------------------------------------- |
-| GET    | `/device`                    | Device info: `{ model, name, frameTvSupport, powerOn, raw }`          |
-| GET    | `/api-version`               | `{ version }` of the TV's art API                                     |
-| GET    | `/art?category=`             | `{ items: [{ contentId, categoryId, raw }] }`                         |
-| GET    | `/art/current`               | `{ contentId, categoryId, raw }` for the artwork on screen            |
-| GET    | `/art-mode`                  | `{ on }`                                                              |
-| POST   | `/art?matte=&portraitMatte=` | Raw `image/jpeg` or `image/png` body, up to 20MB. 201 `{ contentId }` |
-| PUT    | `/art/current`               | `{ contentId, show?, category? }` selects it. 204                     |
-| DELETE | `/art/:contentId`            | Deletes it from the TV. 204                                           |
-| PUT    | `/art/:contentId/matte`      | `{ matte, portraitMatte? }`, e.g. `shadowbox_polar`. 204              |
-| PUT    | `/art-mode`                  | `{ on }`. 204                                                         |
+| Method | Path                         | Body / answers                                                           |
+| ------ | ---------------------------- | ------------------------------------------------------------------------ |
+| GET    | `/device`                    | Device info: `{ model, name, frameTvSupport, powerOn, raw }`             |
+| GET    | `/api-version`               | `{ version }` of the TV's art API                                        |
+| GET    | `/art?category=`             | `{ items: [{ contentId, categoryId, raw }] }`                            |
+| GET    | `/art/:contentId/thumbnail`  | The piece's thumbnail as `image/jpeg` (or `png`). 404 if the TV has none |
+| GET    | `/art/current`               | `{ contentId, categoryId, raw }` for the artwork on screen               |
+| GET    | `/art-mode`                  | `{ on }`                                                                 |
+| POST   | `/art?matte=&portraitMatte=` | Raw `image/jpeg` or `image/png` body, up to 20MB. 201 `{ contentId }`    |
+| PUT    | `/art/current`               | `{ contentId, show?, category? }` selects it. 204                        |
+| DELETE | `/art/:contentId`            | Deletes it from the TV. 204                                              |
+| PUT    | `/art/:contentId/matte`      | `{ matte, portraitMatte? }`, e.g. `shadowbox_polar`. 204                 |
+| PUT    | `/art-mode`                  | `{ on }`. 204                                                            |
+
+Thumbnails are fetched in batches: requests for one TV that arrive within 25ms share one TV request
+(up to 24 ids), and results are kept in memory (`frame.thumbnailCacheMegabytes`, 64 by default) and
+marked immutable for the browser, since a content id always names the same image.
 
 Categories: `MY-C0002` uploads, `MY-C0004` favourites, `MY-C0008` the Art Store.
 

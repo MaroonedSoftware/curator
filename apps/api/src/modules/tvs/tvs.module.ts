@@ -5,6 +5,7 @@ import { Kysely } from 'kysely';
 import { parseApiConfig } from '../../server/api.config.js';
 import type { DB } from '../data/db.js';
 import { FrameClientFactoryToken, FrameClientRegistry, type FrameClientFactory } from '../frame/frame.client.registry.js';
+import { ThumbnailCache } from '../frame/thumbnail.cache.js';
 import { DbTokenStore } from './db.token.store.js';
 import { TvRepository } from './tv.repository.js';
 import { TvService } from './tv.service.js';
@@ -48,7 +49,11 @@ export const TvsModule: ServerKitModule = {
             .register(FrameClientRegistry)
             .useFactory(container => {
                 const tvs = container.get(TvRepository);
-                return new FrameClientRegistry(container.get(FrameClientFactoryToken), tvId => new DbTokenStore(tvs, tvId));
+                return new FrameClientRegistry(
+                    container.get(FrameClientFactoryToken),
+                    tvId => new DbTokenStore(tvs, tvId),
+                    new ThumbnailCache(frame.thumbnailCacheMegabytes * 1024 * 1024),
+                );
             })
             .asSingleton();
 

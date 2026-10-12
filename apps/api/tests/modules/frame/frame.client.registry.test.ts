@@ -1,6 +1,7 @@
 import { MemoryTokenStore } from '@curator/frame';
 import { describe, expect, it } from 'vitest';
 import { FrameClientRegistry, type TvAddress } from '../../../src/modules/frame/frame.client.registry.js';
+import { ThumbnailCache } from '../../../src/modules/frame/thumbnail.cache.js';
 import { FakeFrameClient } from '../../fake.frame.client.js';
 
 const registryWithFakes = () => {
@@ -12,6 +13,7 @@ const registryWithFakes = () => {
             return client;
         },
         () => new MemoryTokenStore(),
+        new ThumbnailCache(1024 * 1024),
     );
     return { registry, built };
 };
