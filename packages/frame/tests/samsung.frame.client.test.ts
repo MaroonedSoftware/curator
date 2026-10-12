@@ -65,6 +65,13 @@ describe('SamsungFrameClient against a fake TV', () => {
         expect(requests[0]?.conn_info).toMatchObject({ d2d_mode: 'socket' });
     });
 
+    it('serves an upload’s own bytes as its thumbnail', async () => {
+        const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+        const contentId = await client.upload(jpeg);
+
+        expect((await client.thumbnails([contentId])).get(contentId)?.data).toEqual(jpeg);
+    });
+
     it('asks the TV nothing for no thumbnails', async () => {
         await expect(client.thumbnails([])).resolves.toEqual(new Map());
         expect(tv.received.filter(req => req.request === 'get_thumbnail_list')).toEqual([]);

@@ -46,6 +46,8 @@ export class FakeTv {
     private thumbnailServer!: net.Server;
     /** Content ids the next thumbnail connection sends, in order. */
     private pendingThumbnails: string[] = [];
+    /** The bytes of each upload, by content id: its thumbnail, so a UI against the fake shows real pictures. */
+    readonly images = new Map<string, Buffer>();
     private artSockets = new Set<WebSocket>();
     private frozenSockets = new Set<WebSocket>();
     private nextId = 2;
@@ -218,7 +220,7 @@ export class FakeTv {
         const ids = this.pendingThumbnails;
         this.pendingThumbnails = [];
         const frames = ids.map((id, num) => {
-            const data = fakeThumbnail(id);
+            const data = this.images.get(id) ?? fakeThumbnail(id);
             const header = Buffer.from(JSON.stringify({ fileID: id, fileType: 'jpg', fileLength: data.length, num, total: ids.length }));
             const length = Buffer.alloc(4);
             length.writeUInt32BE(header.length);
@@ -248,6 +250,7 @@ export class FakeTv {
             if (this.opts.silentUploads) return;
             const contentId = `MY-F${String(this.nextId++).padStart(4, '0')}`;
             this.art.set(contentId, { content_id: contentId, category_id: 'MY-C0002' });
+            this.images.set(contentId, Buffer.from(bytes));
             for (const ws of this.artSockets)
                 this.reply(ws, { event: 'image_added', content_id: contentId, request_id: pending.requestId, id: pending.requestId });
             this.pendingUpload = undefined;
