@@ -50,8 +50,33 @@ describe('a TV’s read endpoints', () => {
 
         expect(response.statusCode).toBe(200);
         expect(response.json()).toEqual({
-            items: [{ contentId: 'MY-F0001', categoryId: 'MY-C0002', raw: { content_id: 'MY-F0001', category_id: 'MY-C0002', matte_id: 'none' } }],
+            items: [
+                {
+                    contentId: 'MY-F0001',
+                    categoryId: 'MY-C0002',
+                    categoryIds: ['MY-C0002'],
+                    raw: { content_id: 'MY-F0001', category_id: 'MY-C0002', matte_id: 'none' },
+                },
+            ],
         });
+    });
+
+    it('GET …/art lists a piece once, with every category the TV lists it under', async () => {
+        // As a 2025 Frame does: an upload under My Photos and MY-C0008, and twice under MY-C0008.
+        const entry = (categoryId: string, slideshow: string) => ({
+            contentId: 'MY_F0019',
+            categoryId,
+            raw: { content_id: 'MY_F0019', category_id: categoryId, slideshow },
+        });
+        server.tv.extraListEntries.push(entry('MY-C0008', 'true'), entry('MY-C0008', 'false'), entry('MY-C0002', 'false'));
+
+        const all = (await server.app.inject({ method: 'GET', url: `${server.base}/art` })).json().items;
+        const other = (await server.app.inject({ method: 'GET', url: `${server.base}/art?category=MY-C0008` })).json().items;
+        server.tv.extraListEntries.length = 0;
+
+        expect(all.map((item: { contentId: string }) => item.contentId)).toEqual(['SAM-S0001', 'MY-F0001', 'MY_F0019']);
+        expect(all[2]).toMatchObject({ categoryId: 'MY-C0008', categoryIds: ['MY-C0008', 'MY-C0002'], raw: { slideshow: 'true' } });
+        expect(other.map((item: { contentId: string }) => item.contentId)).toEqual(['SAM-S0001', 'MY_F0019']);
     });
 
     it('GET …/art rejects an empty category', async () => {

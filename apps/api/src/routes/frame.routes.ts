@@ -13,11 +13,11 @@ const Device = z.object({
     raw: Raw,
 });
 
-const ArtItem = z.object({ contentId: z.string(), categoryId: z.string(), raw: Raw });
+const ArtItem = z.object({ contentId: z.string(), categoryId: z.string(), categoryIds: z.array(z.string()), raw: Raw });
 
 const CurrentArt = z.object({ contentId: z.string().optional(), categoryId: z.string().optional(), raw: Raw });
 
-/** A TV content id: MY-Fxxxx for uploads, SAM-Sxxxx for the Art Store. */
+/** A TV content id: MY-Fxxxx or MY_Fxxxx for uploads, SAM-Sxxxx for the Art Store. */
 const ContentId = z.string().regex(/^[A-Za-z0-9_-]+$/, 'not a content id');
 
 const ContentIdParams = z.object({ contentId: ContentId });
@@ -71,7 +71,7 @@ const frameEndpoints: FastifyPluginAsync = async instance => {
         '/art',
         {
             schema: {
-                // e.g. MY-C0002 for uploads, MY-C0004 favourites, MY-C0008 the Art Store. Omit for everything.
+                // e.g. MY-C0002 for uploads, MY-C0004 favourites. Omit for everything.
                 querystring: z.object({ category: z.string().min(1).optional() }),
                 response: { 200: z.object({ items: z.array(ArtItem) }) },
             },

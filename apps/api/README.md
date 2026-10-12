@@ -97,7 +97,7 @@ Under `/tvs/:tvId`, each TV through its own client:
 | ------ | ---------------------------- | ------------------------------------------------------------------------ |
 | GET    | `/device`                    | Device info: `{ model, name, frameTvSupport, powerOn, raw }`             |
 | GET    | `/api-version`               | `{ version }` of the TV's art API                                        |
-| GET    | `/art?category=`             | `{ items: [{ contentId, categoryId, raw }] }`                            |
+| GET    | `/art?category=`             | `{ items: [{ contentId, categoryId, categoryIds, raw }] }`               |
 | GET    | `/art/:contentId/thumbnail`  | The piece's thumbnail as `image/jpeg` (or `png`). 404 if the TV has none |
 | GET    | `/art/current`               | `{ contentId, categoryId, raw }` for the artwork on screen               |
 | GET    | `/art-mode`                  | `{ on }`                                                                 |
@@ -111,7 +111,9 @@ Thumbnails are fetched in batches: requests for one TV that arrive within 25ms s
 (up to 24 ids), and results are kept in memory (`frame.thumbnailCacheMegabytes`, 64 by default) and
 marked immutable for the browser, since a content id always names the same image.
 
-Categories: `MY-C0002` uploads, `MY-C0004` favourites, `MY-C0008` the Art Store.
+Categories: `MY-C0002` uploads, `MY-C0004` favourites. The reference calls `MY-C0008` the Art
+Store, but a 2025 Frame lists uploads there too. A TV may list a piece under several categories,
+even twice under one; `GET …/art` answers each piece once, with all of them in `categoryIds`.
 
 The TV often leaves writes unanswered, so a 204 means the request was sent, not that the TV acted
 on it. Read the state back (`GET …/art/current`, `GET …/art-mode`) when it matters. A write the

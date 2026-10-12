@@ -7,6 +7,8 @@ export class FakeFrameClient implements FrameClient {
         ['SAM-S0001', { contentId: 'SAM-S0001', categoryId: 'MY-C0008', raw: { content_id: 'SAM-S0001', category_id: 'MY-C0008' } }],
         ['MY-F0001', { contentId: 'MY-F0001', categoryId: 'MY-C0002', raw: { content_id: 'MY-F0001', category_id: 'MY-C0002', matte_id: 'none' } }],
     ]);
+    /** Further list entries, as firmware that lists a piece once per category sends them. */
+    readonly extraListEntries: ArtItem[] = [];
     current_ = 'SAM-S0001';
     artMode = true;
     closed = false;
@@ -42,7 +44,7 @@ export class FakeFrameClient implements FrameClient {
 
     async list(category?: string): Promise<ArtItem[]> {
         this.record('list', category);
-        return [...this.art.values()].filter(item => !category || item.categoryId === category);
+        return [...this.art.values(), ...this.extraListEntries].filter(item => !category || item.categoryId === category);
     }
 
     async current(): Promise<Record<string, unknown>> {

@@ -4,6 +4,30 @@ import type { ThumbnailBatcher } from './thumbnail.batcher.js';
 import { toHttpError } from './frame.http.errors.js';
 
 /** The artwork on screen. `contentId` is absent when the TV did not say. */
+/** A piece of art, once, with every category the TV lists it in. */
+export interface ListedArt extends ArtItem {
+    /** In the order the TV listed them; `categoryId` is the first. */
+    categoryIds: string[];
+}
+
+/**
+ * Folds the TV's list into one entry per piece. Some firmware lists a piece once per category it
+ * is in, and sometimes twice in one (a 2025 Frame lists uploads under both MY-C0002 and MY-C0008).
+ * The first entry's details are kept.
+ */
+export function uniqueArt(items: ArtItem[]): ListedArt[] {
+    const byId = new Map<string, ListedArt>();
+    for (const item of items) {
+        const existing = byId.get(item.contentId);
+        if (!existing) {
+            byId.set(item.contentId, { ...item, categoryIds: [item.categoryId] });
+        } else if (!existing.categoryIds.includes(item.categoryId)) {
+            existing.categoryIds.push(item.categoryId);
+        }
+    }
+    return [...byId.values()];
+}
+
 export interface CurrentArt {
     contentId?: string;
     categoryId?: string;
@@ -43,8 +67,8 @@ export class FrameService {
         return this.call(() => this.client.apiVersion());
     }
 
-    list(category?: string): Promise<ArtItem[]> {
-        return this.call(() => this.client.list(category));
+    async list(category?: string): Promise<ListedArt[]> {
+        return uniqueArt(await this.call(() => this.client.list(category)));
     }
 
     async current(): Promise<CurrentArt> {

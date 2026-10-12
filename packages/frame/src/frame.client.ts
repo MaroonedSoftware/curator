@@ -33,7 +33,11 @@ export interface Thumbnail {
     fileType: string;
 }
 
-/** TV-side categories. MY-C0002 is "My Photos" (uploads), MY-C0004 favourites, MY-C0008 store. */
+/**
+ * TV-side categories. MY-C0002 is "My Photos" (uploads), MY-C0004 favourites. The reference calls
+ * MY-C0008 the store, but a 2025 Frame (QN50LS03F) lists uploads there too, so don't rely on it.
+ * A piece can be listed under several categories.
+ */
 export const Category = {
     MyPhotos: 'MY-C0002',
     Favourites: 'MY-C0004',
