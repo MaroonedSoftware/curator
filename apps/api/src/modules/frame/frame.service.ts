@@ -1,4 +1,4 @@
-import type { ArtItem, DeviceInfo, FrameClient } from '@curator/frame';
+import type { ArtItem, DeviceInfo, FrameClient, UploadOptions } from '@curator/frame';
 import { toHttpError } from './frame.http.errors.js';
 
 /** The artwork on screen. `contentId` is absent when the TV did not say. */
@@ -36,6 +36,11 @@ export class FrameService {
 
     getArtMode(): Promise<boolean> {
         return this.call(() => this.client.getArtMode());
+    }
+
+    /** Resolves with the TV-assigned content id once the TV announces the image. */
+    upload(image: Buffer, opts: UploadOptions): Promise<string> {
+        return this.call(() => this.client.upload(image, opts));
     }
 
     // The writes below are fire-and-forget on the TV's side: they resolve once the request is

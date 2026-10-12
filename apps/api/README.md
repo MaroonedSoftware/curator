@@ -45,24 +45,32 @@ There is no authentication: the API is meant for the home network the TV sits on
 
 ## Routes
 
-| Method | Path                       | Body / answers                                               |
-| ------ | -------------------------- | ------------------------------------------------------------ |
-| GET    | `/health`                  | `{ status: 'ok', uptimeMs }`. Never touches the TV.          |
-| GET    | `/tv`                      | Device info: `{ model, name, frameTvSupport, powerOn, raw }` |
-| GET    | `/tv/api-version`          | `{ version }` of the TV's art API                            |
-| GET    | `/tv/art?category=`        | `{ items: [{ contentId, categoryId, raw }] }`                |
-| GET    | `/tv/art/current`          | `{ contentId, categoryId, raw }` for the artwork on screen   |
-| GET    | `/tv/art-mode`             | `{ on }`                                                     |
-| PUT    | `/tv/art/current`          | `{ contentId, show?, category? }` selects it. 204            |
-| DELETE | `/tv/art/:contentId`       | Deletes it from the TV. 204                                  |
-| PUT    | `/tv/art/:contentId/matte` | `{ matte, portraitMatte? }`, e.g. `shadowbox_polar`. 204     |
-| PUT    | `/tv/art-mode`             | `{ on }`. 204                                                |
+| Method | Path                            | Body / answers                                                        |
+| ------ | ------------------------------- | --------------------------------------------------------------------- |
+| GET    | `/health`                       | `{ status: 'ok', uptimeMs }`. Never touches the TV.                   |
+| GET    | `/tv`                           | Device info: `{ model, name, frameTvSupport, powerOn, raw }`          |
+| GET    | `/tv/api-version`               | `{ version }` of the TV's art API                                     |
+| GET    | `/tv/art?category=`             | `{ items: [{ contentId, categoryId, raw }] }`                         |
+| GET    | `/tv/art/current`               | `{ contentId, categoryId, raw }` for the artwork on screen            |
+| GET    | `/tv/art-mode`                  | `{ on }`                                                              |
+| POST   | `/tv/art?matte=&portraitMatte=` | Raw `image/jpeg` or `image/png` body, up to 20MB. 201 `{ contentId }` |
+| PUT    | `/tv/art/current`               | `{ contentId, show?, category? }` selects it. 204                     |
+| DELETE | `/tv/art/:contentId`            | Deletes it from the TV. 204                                           |
+| PUT    | `/tv/art/:contentId/matte`      | `{ matte, portraitMatte? }`, e.g. `shadowbox_polar`. 204              |
+| PUT    | `/tv/art-mode`                  | `{ on }`. 204                                                         |
 
 Categories: `MY-C0002` uploads, `MY-C0004` favourites, `MY-C0008` the Art Store.
 
 The TV often leaves writes unanswered, so a 204 means the request was sent, not that the TV acted
 on it. Read the state back (`GET /tv/art/current`, `GET /tv/art-mode`) when it matters. A write the
 TV explicitly rejects, such as a matte that doesn't fit the image, still answers 422.
+
+Uploads are the exception: they wait for the TV to announce the new image, so a 201 carries the
+content id it assigned.
+
+```
+curl -X POST 'localhost:14100/tv/art?matte=shadowbox_polar' -H 'content-type: image/jpeg' --data-binary @photo.jpg
+```
 
 ### When the TV fails
 

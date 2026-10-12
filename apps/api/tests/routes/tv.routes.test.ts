@@ -181,6 +181,113 @@ describe('tv write routes', () => {
     });
 });
 
+describe('tv upload', () => {
+    let server: Awaited<ReturnType<typeof createTestServer>>;
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
+
+    beforeAll(async () => {
+        server = await createTestServer();
+    });
+
+    beforeEach(() => {
+        server.tv.calls.length = 0;
+    });
+
+    afterAll(async () => {
+        await server.close();
+    });
+
+    it('POST /tv/art uploads a JPEG and answers its content id', async () => {
+        const response = await server.app.inject({ method: 'POST', url: '/tv/art', headers: { 'content-type': 'image/jpeg' }, payload: jpeg });
+
+        expect(response.statusCode).toBe(201);
+        expect(response.json()).toEqual({ contentId: 'MY-F0003' });
+        expect(server.tv.calls).toEqual([{ method: 'upload', args: [jpeg, { fileType: 'jpg' }] }]);
+    });
+
+    it('POST /tv/art passes a PNG and its mattes through', async () => {
+        const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+        const response = await server.app.inject({
+            method: 'POST',
+            url: '/tv/art?matte=shadowbox_polar&portraitMatte=none',
+            headers: { 'content-type': 'image/png' },
+            payload: png,
+        });
+
+        expect(response.statusCode).toBe(201);
+        expect(server.tv.calls).toEqual([{ method: 'upload', args: [png, { fileType: 'png', matte: 'shadowbox_polar', portraitMatte: 'none' }] }]);
+    });
+
+    it('POST /tv/art accepts an image over Fastify’s default 1MB body limit', async () => {
+        const big = Buffer.alloc(5 * 1024 * 1024, 0xff);
+
+        const response = await server.app.inject({ method: 'POST', url: '/tv/art', headers: { 'content-type': 'image/jpeg' }, payload: big });
+
+        expect(response.statusCode).toBe(201);
+        expect((server.tv.calls[0]?.args[0] as Buffer).length).toBe(big.length);
+    });
+
+    it('POST /tv/art answers 413 above 20MB', async () => {
+        const huge = Buffer.alloc(20 * 1024 * 1024 + 1);
+
+        const response = await server.app.inject({ method: 'POST', url: '/tv/art', headers: { 'content-type': 'image/jpeg' }, payload: huge });
+
+        expect(response.statusCode).toBe(413);
+        expect(server.tv.calls).toEqual([]);
+    });
+
+    it('POST /tv/art answers 415 for anything but JPEG or PNG', async () => {
+        const response = await server.app.inject({
+            method: 'POST',
+            url: '/tv/art',
+            headers: { 'content-type': 'image/gif' },
+            payload: Buffer.from('GIF89a'),
+        });
+
+        expect(response.statusCode).toBe(415);
+        expect(server.tv.calls).toEqual([]);
+    });
+
+    it('POST /tv/art answers 411 without a body', async () => {
+        const response = await server.app.inject({ method: 'POST', url: '/tv/art' });
+
+        expect(response.statusCode).toBe(411);
+    });
+
+    it('POST /tv/art answers 411 for an empty image', async () => {
+        const response = await server.app.inject({
+            method: 'POST',
+            url: '/tv/art',
+            headers: { 'content-type': 'image/jpeg' },
+            payload: Buffer.alloc(0),
+        });
+
+        expect(response.statusCode).toBe(411);
+        expect(server.tv.calls).toEqual([]);
+    });
+
+    it('POST /tv/art rejects a malformed matte', async () => {
+        const response = await server.app.inject({
+            method: 'POST',
+            url: '/tv/art?matte=Shadow%20Box',
+            headers: { 'content-type': 'image/jpeg' },
+            payload: jpeg,
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(server.tv.calls).toEqual([]);
+    });
+
+    it('answers an upload the TV never acknowledged with 504', async () => {
+        server.tv.failNext = new FrameTimeoutError('send_image', 15000);
+
+        const response = await server.app.inject({ method: 'POST', url: '/tv/art', headers: { 'content-type': 'image/jpeg' }, payload: jpeg });
+
+        expect(response.statusCode).toBe(504);
+    });
+});
+
 describe('tv errors', () => {
     let server: Awaited<ReturnType<typeof createTestServer>>;
 

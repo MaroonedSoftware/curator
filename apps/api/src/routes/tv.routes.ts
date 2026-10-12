@@ -27,6 +27,11 @@ const Matte = z.string().regex(/^[a-z0-9_]+$/, 'not a matte id');
 
 const json = { body: ['application/json'] };
 
+/** The upload ceiling, matching ServerKit's binary parser. A 4K JPEG is well under it. */
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+
+const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png' } as const;
+
 /** The Frame's own endpoints, one route per {@link FrameService} call. */
 export const TvRoutes: FastifyPluginAsync = async instance => {
     const app = instance.withTypeProvider<ZodTypeProvider>();
@@ -54,6 +59,25 @@ export const TvRoutes: FastifyPluginAsync = async instance => {
     app.get('/tv/art-mode', { schema: { response: { 200: z.object({ on: z.boolean() }) } } }, async request => ({
         on: await request.container.get(FrameService).getArtMode(),
     }));
+
+    app.post(
+        '/tv/art',
+        {
+            bodyLimit: MAX_IMAGE_BYTES,
+            config: { body: Object.keys(IMAGE_TYPES) },
+            schema: {
+                querystring: z.object({ matte: Matte.optional(), portraitMatte: Matte.optional() }),
+                response: { 201: z.object({ contentId: z.string() }) },
+            },
+        },
+        async (request, reply) => {
+            // The body gate admits only the two image types, and answers 411 for an empty body.
+            const mediaType = request.headers['content-type']?.split(';')[0]?.trim().toLowerCase() as keyof typeof IMAGE_TYPES;
+            const image = request.body as Buffer;
+            const contentId = await request.container.get(FrameService).upload(image, { fileType: IMAGE_TYPES[mediaType], ...request.query });
+            return reply.status(201).send({ contentId });
+        },
+    );
 
     app.put(
         '/tv/art/current',

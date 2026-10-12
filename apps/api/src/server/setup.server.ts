@@ -6,6 +6,7 @@ import type { Container } from 'injectkit';
 import { modules as defaultModules } from '../modules/modules.js';
 import { routes } from '../routes/routes.js';
 import { parseApiConfig } from './api.config.js';
+import { parserMappings } from './parser.mappings.js';
 import { setupPlugins } from './setup.plugins.js';
 
 /**
@@ -20,7 +21,7 @@ export const buildServer = async (
 ): Promise<{ builder: ServerKitServerBuilder; container: Container }> => {
     const apiConfig = parseApiConfig(config);
     const builder = new ServerKitServerBuilder();
-    const container = await builder.setup(config, logger, modules);
+    const container = await builder.setup(config, logger, modules, parserMappings);
     builder.setupPlugins(container => setupPlugins(container, apiConfig)).setupRoutes(routes);
     return { builder, container };
 };
