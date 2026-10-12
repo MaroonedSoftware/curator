@@ -1,11 +1,11 @@
 import type { ZodTypeProvider } from '@maroonedsoftware/fastify/zod';
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { FrameService } from '../modules/frame/frame.service.js';
 
 const Raw = z.record(z.string(), z.unknown());
 
-const Device = z.object({
+export const Device = z.object({
     model: z.string().optional(),
     name: z.string().optional(),
     frameTvSupport: z.boolean(),
@@ -32,18 +32,43 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
 const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png' } as const;
 
-/** The Frame's own endpoints, one route per {@link FrameService} call. */
-export const TvRoutes: FastifyPluginAsync = async instance => {
+/** The {@link FrameService} each request resolved in `onRequest`, before its body is read. */
+const frames = new WeakMap<FastifyRequest, FrameService>();
+
+/** The TV a request is about. Only routes inside {@link frameRoutes} have one. */
+export const frameOf = (request: FastifyRequest): FrameService => {
+    const frame = frames.get(request);
+    if (!frame) {
+        throw new Error(`no TV was resolved for ${request.method} ${request.url}`);
+    }
+    return frame;
+};
+
+/**
+ * The Frame's own endpoints, one route per {@link FrameService} call, for whichever TV `resolve`
+ * names. Mount it under a prefix: `/tvs/:tvId` for a stored TV. `resolve` runs in `onRequest`, so
+ * an unknown TV is refused before an upload's body is read.
+ */
+export const frameRoutes =
+    (resolve: (request: FastifyRequest) => Promise<FrameService> | FrameService): FastifyPluginAsync =>
+    async instance => {
+        instance.addHook('onRequest', async request => {
+            frames.set(request, await resolve(request));
+        });
+        await instance.register(frameEndpoints);
+    };
+
+const frameEndpoints: FastifyPluginAsync = async instance => {
     const app = instance.withTypeProvider<ZodTypeProvider>();
 
-    app.get('/tv', { schema: { response: { 200: Device } } }, async request => request.container.get(FrameService).deviceInfo());
+    app.get('/device', { schema: { response: { 200: Device } } }, async request => frameOf(request).deviceInfo());
 
-    app.get('/tv/api-version', { schema: { response: { 200: z.object({ version: z.string() }) } } }, async request => ({
-        version: await request.container.get(FrameService).apiVersion(),
+    app.get('/api-version', { schema: { response: { 200: z.object({ version: z.string() }) } } }, async request => ({
+        version: await frameOf(request).apiVersion(),
     }));
 
     app.get(
-        '/tv/art',
+        '/art',
         {
             schema: {
                 // e.g. MY-C0002 for uploads, MY-C0004 favourites, MY-C0008 the Art Store. Omit for everything.
@@ -51,17 +76,17 @@ export const TvRoutes: FastifyPluginAsync = async instance => {
                 response: { 200: z.object({ items: z.array(ArtItem) }) },
             },
         },
-        async request => ({ items: await request.container.get(FrameService).list(request.query.category) }),
+        async request => ({ items: await frameOf(request).list(request.query.category) }),
     );
 
-    app.get('/tv/art/current', { schema: { response: { 200: CurrentArt } } }, async request => request.container.get(FrameService).current());
+    app.get('/art/current', { schema: { response: { 200: CurrentArt } } }, async request => frameOf(request).current());
 
-    app.get('/tv/art-mode', { schema: { response: { 200: z.object({ on: z.boolean() }) } } }, async request => ({
-        on: await request.container.get(FrameService).getArtMode(),
+    app.get('/art-mode', { schema: { response: { 200: z.object({ on: z.boolean() }) } } }, async request => ({
+        on: await frameOf(request).getArtMode(),
     }));
 
     app.post(
-        '/tv/art',
+        '/art',
         {
             bodyLimit: MAX_IMAGE_BYTES,
             config: { body: Object.keys(IMAGE_TYPES) },
@@ -74,13 +99,13 @@ export const TvRoutes: FastifyPluginAsync = async instance => {
             // The body gate admits only the two image types, and answers 411 for an empty body.
             const mediaType = request.headers['content-type']?.split(';')[0]?.trim().toLowerCase() as keyof typeof IMAGE_TYPES;
             const image = request.body as Buffer;
-            const contentId = await request.container.get(FrameService).upload(image, { fileType: IMAGE_TYPES[mediaType], ...request.query });
+            const contentId = await frameOf(request).upload(image, { fileType: IMAGE_TYPES[mediaType], ...request.query });
             return reply.status(201).send({ contentId });
         },
     );
 
     app.put(
-        '/tv/art/current',
+        '/art/current',
         {
             config: json,
             schema: {
@@ -94,27 +119,40 @@ export const TvRoutes: FastifyPluginAsync = async instance => {
         },
         async (request, reply) => {
             const { contentId, ...opts } = request.body;
-            await request.container.get(FrameService).select(contentId, opts);
+            await frameOf(request).select(contentId, opts);
             return reply.status(204).send();
         },
     );
 
-    app.delete('/tv/art/:contentId', { schema: { params: ContentIdParams } }, async (request, reply) => {
-        await request.container.get(FrameService).delete(request.params.contentId);
+    app.delete('/art/:contentId', { schema: { params: ContentIdParams } }, async (request, reply) => {
+        await frameOf(request).delete(request.params.contentId);
         return reply.status(204).send();
     });
 
     app.put(
-        '/tv/art/:contentId/matte',
+        '/art/:contentId/matte',
         { config: json, schema: { params: ContentIdParams, body: z.object({ matte: Matte, portraitMatte: Matte.optional() }) } },
         async (request, reply) => {
-            await request.container.get(FrameService).changeMatte(request.params.contentId, request.body.matte, request.body.portraitMatte);
+            await frameOf(request).changeMatte(request.params.contentId, request.body.matte, request.body.portraitMatte);
             return reply.status(204).send();
         },
     );
 
-    app.put('/tv/art-mode', { config: json, schema: { body: z.object({ on: z.boolean() }) } }, async (request, reply) => {
-        await request.container.get(FrameService).setArtMode(request.body.on);
+    app.put('/art-mode', { config: json, schema: { body: z.object({ on: z.boolean() }) } }, async (request, reply) => {
+        await frameOf(request).setArtMode(request.body.on);
         return reply.status(204).send();
     });
+};
+
+/**
+ * The single TV from `tv.*` config, at `/tv`. Superseded by `/tvs/:tvId`; kept until the web app
+ * has moved over.
+ */
+export const TvRoutes: FastifyPluginAsync = async instance => {
+    const app = instance.withTypeProvider<ZodTypeProvider>();
+    app.get('/tv', { schema: { response: { 200: Device } } }, async request => request.container.get(FrameService).deviceInfo());
+    await app.register(
+        frameRoutes(request => request.container.get(FrameService)),
+        { prefix: '/tv' },
+    );
 };

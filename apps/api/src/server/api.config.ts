@@ -23,6 +23,14 @@ const ApiConfigSchema = z.object({
             })
             .prefault({}),
     }),
+    frame: z
+        .object({
+            /** Shown on a TV's pairing prompt. */
+            clientName: z.string().min(1).default('Curator'),
+            /** Log every frame on the wire, for every TV. Noisy; for chasing protocol trouble. */
+            debug: z.stringbool().or(z.boolean()).default(false),
+        })
+        .prefault({}),
     tv: z.object({
         /** The Frame's address on the LAN. Give it a DHCP reservation. */
         host: z.string().min(1),

@@ -1,0 +1,71 @@
+import { httpError } from '@maroonedsoftware/errors';
+import { sql, type Kysely, type Selectable } from 'kysely';
+import type { DB, Tvs } from '../data/db.js';
+
+/** A row of `tvs`, as Kysely reads it back (absent columns are `undefined`). */
+export type TvRow = Selectable<Tvs>;
+
+export interface NewTv {
+    name: string;
+    host: string;
+    port: number;
+    model?: string;
+    token?: string;
+}
+
+/** Reads and writes `tvs`. Every read by id answers 404 for a TV that isn't there. */
+export class TvRepository {
+    constructor(private readonly db: Kysely<DB>) {}
+
+    list(): Promise<TvRow[]> {
+        return this.db.selectFrom('tvs').selectAll().orderBy('createdAt').orderBy('id').execute();
+    }
+
+    async get(id: string): Promise<TvRow> {
+        const tv = await this.db.selectFrom('tvs').selectAll().where('id', '=', id).executeTakeFirst();
+        if (!tv) {
+            throw httpError(404).withDetails({ reason: `no TV with id ${id}` });
+        }
+        return tv;
+    }
+
+    findByAddress(host: string, port: number): Promise<TvRow | undefined> {
+        return this.db.selectFrom('tvs').selectAll().where('host', '=', host).where('port', '=', port).executeTakeFirst();
+    }
+
+    create(tv: NewTv): Promise<TvRow> {
+        return this.db.insertInto('tvs').values(tv).returningAll().executeTakeFirstOrThrow();
+    }
+
+    async rename(id: string, name: string): Promise<TvRow> {
+        const tv = await this.db
+            .updateTable('tvs')
+            .set({ name, updatedAt: sql`now()` })
+            .where('id', '=', id)
+            .returningAll()
+            .executeTakeFirst();
+        if (!tv) {
+            throw httpError(404).withDetails({ reason: `no TV with id ${id}` });
+        }
+        return tv;
+    }
+
+    async setToken(id: string, token: string): Promise<void> {
+        await this.db
+            .updateTable('tvs')
+            .set({ token, updatedAt: sql`now()` })
+            .where('id', '=', id)
+            .execute();
+    }
+
+    async getToken(id: string): Promise<string | undefined> {
+        const row = await this.db.selectFrom('tvs').select('token').where('id', '=', id).executeTakeFirst();
+        return row?.token ?? undefined;
+    }
+
+    /** Resolves false when there was no such TV. */
+    async delete(id: string): Promise<boolean> {
+        const result = await this.db.deleteFrom('tvs').where('id', '=', id).executeTakeFirst();
+        return result.numDeletedRows > 0n;
+    }
+}

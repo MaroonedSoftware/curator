@@ -64,31 +64,48 @@ There is no authentication: the API is meant for the home network the TV sits on
 
 ## Routes
 
-| Method | Path                            | Body / answers                                                        |
-| ------ | ------------------------------- | --------------------------------------------------------------------- |
-| GET    | `/health`                       | `{ status: 'ok', uptimeMs }`. Never touches the TV.                   |
-| GET    | `/tv`                           | Device info: `{ model, name, frameTvSupport, powerOn, raw }`          |
-| GET    | `/tv/api-version`               | `{ version }` of the TV's art API                                     |
-| GET    | `/tv/art?category=`             | `{ items: [{ contentId, categoryId, raw }] }`                         |
-| GET    | `/tv/art/current`               | `{ contentId, categoryId, raw }` for the artwork on screen            |
-| GET    | `/tv/art-mode`                  | `{ on }`                                                              |
-| POST   | `/tv/art?matte=&portraitMatte=` | Raw `image/jpeg` or `image/png` body, up to 20MB. 201 `{ contentId }` |
-| PUT    | `/tv/art/current`               | `{ contentId, show?, category? }` selects it. 204                     |
-| DELETE | `/tv/art/:contentId`            | Deletes it from the TV. 204                                           |
-| PUT    | `/tv/art/:contentId/matte`      | `{ matte, portraitMatte? }`, e.g. `shadowbox_polar`. 204              |
-| PUT    | `/tv/art-mode`                  | `{ on }`. 204                                                         |
+| Method | Path         | Body / answers                                                        |
+| ------ | ------------ | --------------------------------------------------------------------- |
+| GET    | `/health`    | `{ status: 'ok', uptimeMs }`. Never touches a TV.                     |
+| GET    | `/tvs`       | `{ items: [Tv] }`, oldest first                                       |
+| GET    | `/tvs/:tvId` | `Tv`: `{ id, name, host, port, model, paired, createdAt, updatedAt }` |
+| PATCH  | `/tvs/:tvId` | `{ name }` renames it. Answers the `Tv`                               |
+| DELETE | `/tvs/:tvId` | Forgets the TV and closes its connection. 204                         |
+
+A TV's pairing token is stored in its row and never returned. `paired: false` means the TV must be
+paired again. An unknown `tvId` is a 404, a malformed one a 400.
+
+### A TV's own endpoints
+
+Under `/tvs/:tvId`, each TV through its own client:
+
+| Method | Path                         | Body / answers                                                        |
+| ------ | ---------------------------- | --------------------------------------------------------------------- |
+| GET    | `/device`                    | Device info: `{ model, name, frameTvSupport, powerOn, raw }`          |
+| GET    | `/api-version`               | `{ version }` of the TV's art API                                     |
+| GET    | `/art?category=`             | `{ items: [{ contentId, categoryId, raw }] }`                         |
+| GET    | `/art/current`               | `{ contentId, categoryId, raw }` for the artwork on screen            |
+| GET    | `/art-mode`                  | `{ on }`                                                              |
+| POST   | `/art?matte=&portraitMatte=` | Raw `image/jpeg` or `image/png` body, up to 20MB. 201 `{ contentId }` |
+| PUT    | `/art/current`               | `{ contentId, show?, category? }` selects it. 204                     |
+| DELETE | `/art/:contentId`            | Deletes it from the TV. 204                                           |
+| PUT    | `/art/:contentId/matte`      | `{ matte, portraitMatte? }`, e.g. `shadowbox_polar`. 204              |
+| PUT    | `/art-mode`                  | `{ on }`. 204                                                         |
+
+The same endpoints answer under `/tv` (and `GET /tv` for the device) for the single TV in `tv.*`
+config, until the web app has moved to `/tvs`.
 
 Categories: `MY-C0002` uploads, `MY-C0004` favourites, `MY-C0008` the Art Store.
 
 The TV often leaves writes unanswered, so a 204 means the request was sent, not that the TV acted
-on it. Read the state back (`GET /tv/art/current`, `GET /tv/art-mode`) when it matters. A write the
+on it. Read the state back (`GET …/art/current`, `GET …/art-mode`) when it matters. A write the
 TV explicitly rejects, such as a matte that doesn't fit the image, still answers 422.
 
 Uploads are the exception: they wait for the TV to announce the new image, so a 201 carries the
 content id it assigned.
 
 ```
-curl -X POST 'localhost:14100/tv/art?matte=shadowbox_polar' -H 'content-type: image/jpeg' --data-binary @photo.jpg
+curl -X POST "localhost:14100/tvs/$TV_ID/art?matte=shadowbox_polar" -H 'content-type: image/jpeg' --data-binary @photo.jpg
 ```
 
 ### When the TV fails

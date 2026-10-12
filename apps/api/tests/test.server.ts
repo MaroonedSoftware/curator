@@ -1,7 +1,12 @@
 import { AppConfig } from '@maroonedsoftware/appconfig';
 import type { ServerKitModule } from '@maroonedsoftware/fastify';
 import { ConsoleLogger, type Logger } from '@maroonedsoftware/logger';
+import type { TokenStore } from '@curator/frame';
+import { Kysely } from 'kysely';
+import type { DB } from '../src/modules/data/db.js';
+import { FrameClientFactoryToken, type FrameClientFactory, type TvAddress } from '../src/modules/frame/frame.client.registry.js';
 import { FrameClientToken } from '../src/modules/frame/frame.tokens.js';
+import type { NewTv, TvRow } from '../src/modules/tvs/tv.repository.js';
 import { modules } from '../src/modules/modules.js';
 import { buildServer } from '../src/server/setup.server.js';
 import { FakeFrameClient } from './fake.frame.client.js';
@@ -35,11 +40,20 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
     const dbName = uniqueDbName(testFileUrl);
     await createTestDb(dbName);
     const tv = new FakeFrameClient();
+    /** The fake behind each stored TV, by TV id, built when the API first reaches for that TV. */
+    const tvs = new Map<string, { client: FakeFrameClient; address: TvAddress; tokenStore: TokenStore }>();
+    const factory: FrameClientFactory = (address, tokenStore) => {
+        const client = new FakeFrameClient();
+        tvs.set(address.id, { client, address, tokenStore });
+        return client;
+    };
     const fakeTv: ServerKitModule = {
         name: 'FakeTv',
         setup: async registry => {
             registry.remove(FrameClientToken);
             registry.register(FrameClientToken).useInstance(tv);
+            registry.remove(FrameClientFactoryToken);
+            registry.register(FrameClientFactoryToken).useInstance(factory);
         },
     };
     const testModules = [...modules, fakeTv];
@@ -57,5 +71,18 @@ export const createTestServer = async (testFileUrl: string, overrides: Record<st
         }
         await dropTestDb(dbName);
     };
-    return { app: builder.app, container, tv, dbName, close };
+    const db: Kysely<DB> = container.get(Kysely<DB>);
+    /** Stores a TV directly, as if it had been paired. */
+    const addTv = (values: Partial<NewTv> = {}): Promise<TvRow> => {
+        const tv: NewTv = {
+            name: 'Living Room',
+            host: `192.0.2.${10 + Math.floor(Math.random() * 200)}`,
+            port: 8002,
+            token: 'paired-token',
+            ...values,
+        };
+        return db.insertInto('tvs').values(tv).returningAll().executeTakeFirstOrThrow();
+    };
+
+    return { app: builder.app, container, tv, tvs, db, addTv, dbName, close };
 };
