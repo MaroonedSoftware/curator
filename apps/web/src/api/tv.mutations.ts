@@ -90,3 +90,18 @@ export function useUploadArt(tvId: string) {
         },
     });
 }
+
+/** Swaps a piece's image. Everything that names pieces is read again: the art, what's on screen, the albums and the rotation. */
+export function useReplaceArt(tvId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ contentId, image }: { contentId: string; image: File }) => tvApi(tvId).replaceArt(contentId, image),
+        onError: notifyFailure,
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.allArt(tvId) });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.currentArt(tvId) });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.albums(tvId) });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.rotation(tvId) });
+        },
+    });
+}

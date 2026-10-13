@@ -230,6 +230,17 @@ export const tvApi = (tvId: string) => {
         advanceRotation: async () => (await request<{ contentId: string }>(`${base}/rotation/advance`, { method: 'POST' })).contentId,
 
         /**
+         * Swaps a piece's image: the new one keeps the piece's mattes and takes its place in every album
+         * and the rotation, and the old one is deleted. Resolves with the piece now standing in for it.
+         */
+        replaceArt: (contentId: string, image: Blob) =>
+            request<UploadedArt>(`${base}/art/${encodeURIComponent(contentId)}/replace`, {
+                method: 'POST',
+                headers: { 'content-type': image.type },
+                body: image,
+            }),
+
+        /**
          * Resolves with the piece's content id, which the TV assigns. An image curator already uploaded
          * isn't sent again: the piece already on the TV comes back, marked `duplicate`, its mattes unchanged.
          */

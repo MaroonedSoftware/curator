@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ActionIcon, Badge, Button, Group, Image, Modal, Stack, Table, Text } from '@mantine/core';
-import { IconAlbum, IconChevronLeft, IconChevronRight, IconDownload, IconFrame, IconPlayerPlay, IconTrash } from '@tabler/icons-react';
+import { IconAlbum, IconChevronLeft, IconReplace, IconChevronRight, IconDownload, IconFrame, IconPlayerPlay, IconTrash } from '@tabler/icons-react';
 import { isUpload, type ArtItem } from '../../api/api.client';
 import { artDetails } from '../../api/art.details';
 import { matteLabel } from '../../api/mattes';
@@ -19,6 +19,7 @@ interface ArtViewerProps {
     onShow: () => void;
     onChangeMatte: () => void;
     onAddToAlbum: () => void;
+    onReplace: () => void;
     onDelete: () => void;
 }
 
@@ -40,6 +41,7 @@ export function ArtViewer({
     onShow,
     onChangeMatte,
     onAddToAlbum,
+    onReplace,
     onDelete,
 }: ArtViewerProps) {
     const index = items.findIndex(candidate => candidate.contentId === item.contentId);
@@ -151,6 +153,11 @@ export function ArtViewer({
                     {originalUrl && (
                         <Button component="a" href={originalUrl} download variant="subtle" leftSection={<IconDownload size={16} />}>
                             Download
+                        </Button>
+                    )}
+                    {isUpload(item) && (
+                        <Button variant="subtle" leftSection={<IconReplace size={16} />} onClick={onReplace}>
+                            Replace
                         </Button>
                     )}
                     {isUpload(item) && (
