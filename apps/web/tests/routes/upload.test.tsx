@@ -71,16 +71,29 @@ describe('upload', () => {
         expect(writes(requests).map(request => request.method)).toEqual(['POST']);
     });
 
-    it('refuses a file that is not a JPEG or PNG', async () => {
+    it('sends a WebP as it is, for the API to convert', async () => {
+        const requests = fakeTv();
+        const user = setupUser();
+
+        renderApp(`${TV_BASE}/upload`);
+        const webp = new File([new Uint8Array([0x52, 0x49, 0x46, 0x46])], 'F48.webp', { type: 'image/webp' });
+        await user.upload(await waitFor(fileInput), webp);
+        await user.click(await screen.findByRole('button', { name: 'Upload' }));
+
+        expect(await screen.findByText('On the TV')).toBeInTheDocument();
+        expect(writes(requests)[0]?.headers.get('content-type')).toBe('image/webp');
+    });
+
+    it('refuses a file that is not an image it can upload', async () => {
         const requests = fakeTv();
         // applyAccept off, so the file reaches the dropzone as a dragged one would.
         const user = setupUser({ applyAccept: false });
 
         renderApp(`${TV_BASE}/upload`);
-        const gif = new File([new Uint8Array([0x47, 0x49, 0x46])], 'cat.gif', { type: 'image/gif' });
-        await user.upload(await waitFor(fileInput), gif);
+        const bmp = new File([new Uint8Array([0x42, 0x4d])], 'cat.bmp', { type: 'image/bmp' });
+        await user.upload(await waitFor(fileInput), bmp);
 
-        expect(await screen.findByText('cat.gif isn’t a JPEG or PNG.')).toBeInTheDocument();
+        expect(await screen.findByText('cat.bmp isn’t a JPEG, PNG, WebP, AVIF, GIF or TIFF.')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Upload' })).not.toBeInTheDocument();
         expect(writes(requests)).toEqual([]);
     });

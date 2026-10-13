@@ -4,7 +4,7 @@ import { Dropzone, type FileRejection } from '@mantine/dropzone';
 import { notifications } from '@mantine/notifications';
 import { IconPhotoPlus, IconUpload, IconX } from '@tabler/icons-react';
 import { useUploadToAlbum } from '../../api/album.mutations';
-import { IMAGE_TYPES, MAX_IMAGE_BYTES, rejectionMessage } from '../../api/upload.limits';
+import { IMAGE_TYPE_NAMES, IMAGE_TYPES, MAX_IMAGE_BYTES, rejectionMessage } from '../../api/upload.limits';
 import { useTv } from '../../tvs/tv.context';
 
 /**
@@ -60,7 +60,7 @@ export function AlbumDropzone({ albumId, albumName }: { albumId: string; albumNa
                                 : 'Drop images here to upload them into this album, or click to choose'}
                         </Text>
                         <Text size="sm" c="dimmed">
-                            JPEG or PNG, up to 20MB each.
+                            {IMAGE_TYPE_NAMES}, up to 20MB each.
                         </Text>
                     </div>
                 </Group>

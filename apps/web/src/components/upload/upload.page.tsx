@@ -6,7 +6,7 @@ import { IconPhoto, IconUpload, IconX } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import { NO_MATTE } from '../../api/mattes';
 import { useUploadArt } from '../../api/tv.mutations';
-import { IMAGE_TYPES, MAX_IMAGE_BYTES, rejectionMessage } from '../../api/upload.limits';
+import { IMAGE_TYPE_NAMES, IMAGE_TYPES, MAX_IMAGE_BYTES, rejectionMessage } from '../../api/upload.limits';
 import { useTv } from '../../tvs/tv.context';
 import { MattePicker } from '../art/matte.picker';
 
@@ -78,7 +78,7 @@ export function UploadPage() {
                     <div>
                         <Text size="lg">Drop an image here, or click to choose one</Text>
                         <Text size="sm" c="dimmed">
-                            JPEG or PNG, up to 20MB. 3840×2160 fills the screen.
+                            {IMAGE_TYPE_NAMES}, up to 20MB. 3840×2160 fills the screen.
                         </Text>
                     </div>
                 </Group>
