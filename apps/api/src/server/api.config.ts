@@ -37,8 +37,8 @@ const ApiConfigSchema = z.object({
         .prefault({}),
     rotation: z
         .object({
-            /** How often to look for a TV whose next album piece is due. */
-            tickSeconds: z.coerce.number().int().min(1).max(3600).default(60),
+            /** How often to look for a TV whose next album piece is due. Well under the shortest interval (1 minute), or a TV due just after a tick waits a whole extra tick. */
+            tickSeconds: z.coerce.number().int().min(1).max(3600).default(25),
             /** How long to leave a TV that failed to advance (off, say) before trying it again. */
             retrySeconds: z.coerce.number().int().min(1).max(86_400).default(300),
         })
