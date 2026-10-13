@@ -22,6 +22,8 @@ export interface TvOriginals {
     delete(contentId: string): Promise<void>;
     /** The content ids (normalized) of the kept originals with this {@link fingerprintOf}. */
     withFingerprint(fingerprint: string): Promise<string[]>;
+    /** The content ids (normalized) of every kept original. */
+    contentIds(): Promise<string[]>;
 }
 
 /**
@@ -91,6 +93,10 @@ export class OriginalStore {
 
             async withFingerprint(fingerprint) {
                 return [...(await index()).entries()].filter(([, candidate]) => candidate === fingerprint).map(([contentId]) => contentId);
+            },
+
+            async contentIds() {
+                return [...(await index()).keys()];
             },
         };
     }

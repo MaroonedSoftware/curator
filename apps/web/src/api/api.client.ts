@@ -180,6 +180,9 @@ export const api = {
     connectTv: (tv: ConnectTv) => request<Tv>('/tvs', json('POST', tv)),
     renameTv: (tvId: string, name: string) => request<Tv>(`/tvs/${encodeURIComponent(tvId)}`, json('PATCH', { name })),
     removeTv: (tvId: string) => request<void>(`/tvs/${encodeURIComponent(tvId)}`, { method: 'DELETE' }),
+
+    /** Where the browser downloads a backup of every TV from: a zip of their art, albums and rotations. */
+    backupUrl: `${BASE}/backup`,
 };
 
 /** One TV's own endpoints, under /tvs/:tvId. */
@@ -198,6 +201,9 @@ export const tvApi = (tvId: string) => {
         changeMatte: (contentId: string, matte: string, portraitMatte?: string) =>
             request<void>(`${base}/art/${encodeURIComponent(contentId)}/matte`, json('PUT', { matte, portraitMatte })),
         setArtMode: (on: boolean) => request<void>(`${base}/art-mode`, json('PUT', { on })),
+
+        /** Where the browser downloads a backup of this TV from: a zip of its art, albums and rotation. */
+        backupUrl: `${BASE}${base}/backup`,
 
         /** Where the browser loads a piece's thumbnail from. The API batches and caches these. */
         thumbnailUrl: (contentId: string) => `${BASE}${base}/art/${encodeURIComponent(contentId)}/thumbnail`,
