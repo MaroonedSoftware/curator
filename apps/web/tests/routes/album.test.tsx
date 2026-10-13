@@ -66,7 +66,7 @@ function fakeTv() {
             ];
         }),
     );
-    const uploads = { next: 10, failing: new Set<string>() };
+    const uploads = { next: 10, failing: new Set<string>(), onTv: new Map<string, string>() };
     const requests = fakeApi({
         ...withTv(),
         [`GET ${TV_BASE}/art`]: () => jsonResponse({ items: [piece('MY_F0001'), piece('MY-F0002')] }),
@@ -75,7 +75,12 @@ function fakeTv() {
             if (uploads.failing.has(await (request.body as Blob).text())) {
                 return errorResponse(504, 'Gateway Timeout', { reason: 'the TV did not acknowledge the upload' });
             }
-            return jsonResponse({ contentId: `MY-F00${uploads.next++}` }, 201);
+            // A body named in `uploads.onTv` is an image the TV already has, as that piece.
+            const existing = uploads.onTv.get(await (request.body as Blob).text());
+            if (existing) {
+                return jsonResponse({ contentId: existing, duplicate: true });
+            }
+            return jsonResponse({ contentId: `MY-F00${uploads.next++}`, duplicate: false }, 201);
         },
         [`GET ${TV_BASE}/art/current`]: () => jsonResponse({ contentId: state.current, raw: {} }),
         [`GET ${TV_BASE}/art-mode`]: () => jsonResponse({ on: true }),
@@ -136,6 +141,18 @@ describe('album', () => {
         expect(await screen.findByText('2 images uploaded to the TV and added to Christmas.')).toBeInTheDocument();
         expect(screen.getByText('photo.heic isn’t a JPEG or PNG.')).toBeInTheDocument();
         expect(state.albums[1]!.contentIds).toEqual(['MY-F0010', 'MY-F0011']);
+    });
+
+    it('adds an image already on the TV to the album as its existing piece, and says so', async () => {
+        const { state, uploads } = fakeTv();
+        uploads.onTv.set('again.jpg', 'MY_F0001');
+        const user = setupUser();
+
+        renderApp(`${TV_BASE}/albums/${CHRISTMAS}`);
+        await user.upload(await waitFor(dropzoneInput), [image('again.jpg'), image('new.jpg')]);
+
+        expect(await screen.findByText('2 images added to Christmas. 1 was already on the TV, so it wasn’t uploaded again.')).toBeInTheDocument();
+        expect(state.albums[1]!.contentIds).toEqual(['MY-F0001', 'MY-F0010']);
     });
 
     it('turns away a file that isn’t a JPEG or PNG, uploading nothing', async () => {

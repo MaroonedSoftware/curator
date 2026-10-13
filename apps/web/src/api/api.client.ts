@@ -96,6 +96,12 @@ export interface RotationSetting {
     shuffle?: boolean;
 }
 
+/** An upload's piece. `duplicate` is set when the TV already had this exact image, which then wasn't sent again. */
+export interface UploadedArt {
+    contentId: string;
+    duplicate: boolean;
+}
+
 export interface MatteOptions {
     matte?: string;
     portraitMatte?: string;
@@ -223,14 +229,15 @@ export const tvApi = (tvId: string) => {
         /** Shows the album's next piece now. Resolves with its content id. */
         advanceRotation: async () => (await request<{ contentId: string }>(`${base}/rotation/advance`, { method: 'POST' })).contentId,
 
-        /** Resolves with the content id the TV assigned. */
-        uploadArt: async (image: Blob, opts: MatteOptions = {}) =>
-            (
-                await request<{ contentId: string }>(`${base}/art${query({ ...opts })}`, {
-                    method: 'POST',
-                    headers: { 'content-type': image.type },
-                    body: image,
-                })
-            ).contentId,
+        /**
+         * Resolves with the piece's content id, which the TV assigns. An image curator already uploaded
+         * isn't sent again: the piece already on the TV comes back, marked `duplicate`, its mattes unchanged.
+         */
+        uploadArt: (image: Blob, opts: MatteOptions = {}) =>
+            request<UploadedArt>(`${base}/art${query({ ...opts })}`, {
+                method: 'POST',
+                headers: { 'content-type': image.type },
+                body: image,
+            }),
     };
 };

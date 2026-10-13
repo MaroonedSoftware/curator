@@ -58,26 +58,29 @@ export const useAdvanceRotation = (tvId: string) => useRotationMutation(tvId, ()
 /**
  * Uploads images to the TV one at a time, adding each to the album as soon as the TV has it, so a
  * later failure never loses an earlier image. A failed image is reported and the rest carry on.
- * Resolves with the content ids of the images added. `progress` counts through the batch.
+ * An image already on the TV isn't uploaded again; its piece goes into the album. Resolves with how
+ * many images went into the album, and how many of those were already on the TV. `progress` counts
+ * through the batch.
  */
 export function useUploadToAlbum(tvId: string, albumId: string) {
     const queryClient = useQueryClient();
     const [progress, setProgress] = useState<{ done: number; total: number }>();
     const mutation = useMutation({
         mutationFn: async (images: File[]) => {
-            const added: string[] = [];
+            const result = { added: 0, duplicates: 0 };
             for (const [i, image] of images.entries()) {
                 setProgress({ done: i, total: images.length });
                 try {
-                    const contentId = await tvApi(tvId).uploadArt(image);
+                    const { contentId, duplicate } = await tvApi(tvId).uploadArt(image);
                     await tvApi(tvId).addToAlbum(albumId, [contentId]);
-                    added.push(contentId);
+                    result.added++;
+                    if (duplicate) result.duplicates++;
                 } catch (error) {
                     const { message } = describeError(error);
                     notifications.show({ color: 'red', title: `${image.name} wasn’t added`, message });
                 }
             }
-            return added;
+            return result;
         },
         onSettled: () => {
             setProgress(undefined);

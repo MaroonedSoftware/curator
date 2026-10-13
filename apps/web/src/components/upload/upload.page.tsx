@@ -4,6 +4,7 @@ import { Dropzone } from '@mantine/dropzone';
 import { notifications } from '@mantine/notifications';
 import { IconPhoto, IconUpload, IconX } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
+import type { UploadedArt } from '../../api/api.client';
 import { NO_MATTE } from '../../api/mattes';
 import { useUploadArt } from '../../api/tv.mutations';
 import { IMAGE_TYPES, MAX_IMAGE_BYTES, rejectionMessage } from '../../api/upload.limits';
@@ -20,7 +21,7 @@ export function UploadPage() {
     const [matte, setMatte] = useState(NO_MATTE);
     const [portraitMatte, setPortraitMatte] = useState(NO_MATTE);
     const [show, setShow] = useState(true);
-    const [uploaded, setUploaded] = useState<string>();
+    const [uploaded, setUploaded] = useState<UploadedArt>();
     const tv = useTv();
     const upload = useUploadArt(tv.id);
 
@@ -43,10 +44,14 @@ export function UploadPage() {
         upload.mutate(
             { image: file, matte, portraitMatte, show },
             {
-                onSuccess: contentId => {
-                    setUploaded(contentId);
+                onSuccess: result => {
+                    setUploaded(result);
                     setFile(undefined);
-                    notifications.show({ color: 'teal', title: 'Uploaded', message: `The TV saved it as ${contentId}.` });
+                    notifications.show(
+                        result.duplicate
+                            ? { color: 'blue', title: 'Already on the TV', message: `The TV already has this image as ${result.contentId}.` }
+                            : { color: 'teal', title: 'Uploaded', message: `The TV saved it as ${result.contentId}.` },
+                    );
                 },
             },
         );
@@ -91,12 +96,12 @@ export function UploadPage() {
             )}
 
             {uploaded && (
-                <Alert color="teal" variant="light" title="On the TV">
-                    Saved as{' '}
+                <Alert color={uploaded.duplicate ? 'blue' : 'teal'} variant="light" title={uploaded.duplicate ? 'Already on the TV' : 'On the TV'}>
+                    {uploaded.duplicate ? 'The TV already had this exact image, so it wasn’t sent again. It is ' : 'Saved as '}
                     <Text span ff="monospace">
-                        {uploaded}
+                        {uploaded.contentId}
                     </Text>
-                    . Find it in the{' '}
+                    {uploaded.duplicate ? ', with its matte as it was' : ''}. Find it in the{' '}
                     <Link to="/tvs/$tvId/library" params={{ tvId: tv.id }} search={{ category: 'MY-C0002' }}>
                         library
                     </Link>

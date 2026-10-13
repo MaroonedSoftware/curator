@@ -7,6 +7,15 @@ import { useUploadToAlbum } from '../../api/album.mutations';
 import { IMAGE_TYPES, MAX_IMAGE_BYTES, rejectionMessage } from '../../api/upload.limits';
 import { useTv } from '../../tvs/tv.context';
 
+const images = (n: number) => (n === 1 ? '1 image' : `${n} images`);
+
+/** "2 images uploaded to the TV and added to Halloween.", saying how many were already there. */
+const addedMessage = (added: number, duplicates: number, albumName: string): string => {
+    if (duplicates === 0) return `${images(added)} uploaded to the TV and added to ${albumName}.`;
+    const already = duplicates === 1 ? '1 was already on the TV, so it wasn’t' : `${duplicates} were already on the TV, so they weren’t`;
+    return `${images(added)} added to ${albumName}. ${already} uploaded again.`;
+};
+
 /**
  * Images dropped here, or anywhere on the page, go to the TV and straight into the album. They are
  * uploaded without a matte and left off screen; the library can change either afterwards.
@@ -19,10 +28,9 @@ export function AlbumDropzone({ albumId, albumName }: { albumId: string; albumNa
     const drop = (images: File[]) => {
         if (images.length === 0) return;
         upload.mutate(images, {
-            onSuccess: added => {
-                if (added.length > 0) {
-                    const what = added.length === 1 ? '1 image' : `${added.length} images`;
-                    notifications.show({ color: 'teal', title: 'Added', message: `${what} uploaded to the TV and added to ${albumName}.` });
+            onSuccess: ({ added, duplicates }) => {
+                if (added > 0) {
+                    notifications.show({ color: 'teal', title: 'Added', message: addedMessage(added, duplicates, albumName) });
                 }
             },
         });

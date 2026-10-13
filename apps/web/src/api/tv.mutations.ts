@@ -71,16 +71,16 @@ export function useChangeMatte(tvId: string) {
     });
 }
 
-/** Uploads an image, then puts it on screen if asked. Resolves with the TV's content id. */
+/** Uploads an image, then puts it on screen if asked. Resolves with its piece, which may be one already on the TV. */
 export function useUploadArt(tvId: string) {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ image, matte, portraitMatte, show }: { image: File; matte: string; portraitMatte: string; show: boolean }) => {
-            const contentId = await tvApi(tvId).uploadArt(image, { matte, portraitMatte });
+            const uploaded = await tvApi(tvId).uploadArt(image, { matte, portraitMatte });
             if (show) {
-                await tvApi(tvId).selectArt(contentId, { show: true, category: Category.MyPhotos });
+                await tvApi(tvId).selectArt(uploaded.contentId, { show: true, category: Category.MyPhotos });
             }
-            return contentId;
+            return uploaded;
         },
         onError: notifyFailure,
         onSuccess: () => {

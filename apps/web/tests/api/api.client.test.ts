@@ -63,10 +63,10 @@ describe('api client', () => {
     });
 
     it('uploads the image as the raw body under its own type, mattes in the query', async () => {
-        const requests = fakeApi({ [`POST ${TV_BASE}/art`]: () => jsonResponse({ contentId: 'MY-F0009' }, 201) });
+        const requests = fakeApi({ [`POST ${TV_BASE}/art`]: () => jsonResponse({ contentId: 'MY-F0009', duplicate: false }, 201) });
         const image = new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' });
 
-        await expect(tvApi(TV.id).uploadArt(image, { matte: 'shadowbox_polar' })).resolves.toBe('MY-F0009');
+        await expect(tvApi(TV.id).uploadArt(image, { matte: 'shadowbox_polar' })).resolves.toEqual({ contentId: 'MY-F0009', duplicate: false });
 
         expect(requests[0]?.headers.get('content-type')).toBe('image/jpeg');
         expect(requests[0]?.search.get('matte')).toBe('shadowbox_polar');
