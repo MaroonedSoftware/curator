@@ -1,6 +1,7 @@
 import { FrameConnectionError, FrameError, FrameRequestError, FrameTimeoutError, FrameUnauthorizedError } from '@curator/frame';
 import { readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import sharp from 'sharp';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createTvTestServer } from '../test.server.js';
 
@@ -283,12 +284,42 @@ describe('uploading to a TV', () => {
         expect(server.tv.calls).toEqual([]);
     });
 
-    it('POST …/art answers 415 for anything but JPEG or PNG', async () => {
+    it('POST …/art converts a WebP to a JPEG before sending it', async () => {
+        const webp = await sharp({ create: { width: 8, height: 6, channels: 3, background: '#c82828' } })
+            .webp()
+            .toBuffer();
+
+        const response = await server.app.inject({
+            method: 'POST',
+            url: `${server.base}/art?matte=none`,
+            headers: { 'content-type': 'image/webp' },
+            payload: webp,
+        });
+
+        expect(response.statusCode).toBe(201);
+        const [sent, opts] = server.tv.calls[0]?.args as [Buffer, unknown];
+        expect(opts).toEqual({ fileType: 'jpg', matte: 'none' });
+        expect(await sharp(sent).metadata()).toMatchObject({ format: 'jpeg', width: 8, height: 6 });
+    });
+
+    it('POST …/art answers 422 for a WebP that can’t be read', async () => {
         const response = await server.app.inject({
             method: 'POST',
             url: `${server.base}/art`,
-            headers: { 'content-type': 'image/gif' },
-            payload: Buffer.from('GIF89a'),
+            headers: { 'content-type': 'image/webp' },
+            payload: Buffer.from('RIFF nonsense'),
+        });
+
+        expect(response.statusCode).toBe(422);
+        expect(server.tv.calls).toEqual([]);
+    });
+
+    it('POST …/art answers 415 for a type it can’t convert', async () => {
+        const response = await server.app.inject({
+            method: 'POST',
+            url: `${server.base}/art`,
+            headers: { 'content-type': 'image/bmp' },
+            payload: Buffer.from('BM'),
         });
 
         expect(response.statusCode).toBe(415);

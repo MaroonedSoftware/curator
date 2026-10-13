@@ -2,6 +2,7 @@ import type { ZodTypeProvider } from '@maroonedsoftware/fastify/zod';
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { FrameService } from '../modules/frame/frame.service.js';
+import { toFrameImage, UPLOAD_IMAGE_TYPES } from '../modules/frame/image.converter.js';
 
 const Raw = z.record(z.string(), z.unknown());
 
@@ -29,8 +30,6 @@ const json = { body: ['application/json'] };
 
 /** The upload ceiling, matching ServerKit's binary parser. A 4K JPEG is well under it. */
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
-
-const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png' } as const;
 
 /** The {@link FrameService} each request resolved in `onRequest`, before its body is read. */
 const frames = new WeakMap<FastifyRequest, FrameService>();
@@ -108,17 +107,17 @@ const frameEndpoints: FastifyPluginAsync = async instance => {
         '/art',
         {
             bodyLimit: MAX_IMAGE_BYTES,
-            config: { body: Object.keys(IMAGE_TYPES) },
+            config: { body: UPLOAD_IMAGE_TYPES },
             schema: {
                 querystring: z.object({ matte: Matte.optional(), portraitMatte: Matte.optional() }),
                 response: { 201: z.object({ contentId: z.string() }) },
             },
         },
         async (request, reply) => {
-            // The body gate admits only the two image types, and answers 411 for an empty body.
-            const mediaType = request.headers['content-type']?.split(';')[0]?.trim().toLowerCase() as keyof typeof IMAGE_TYPES;
-            const image = request.body as Buffer;
-            const contentId = await frameOf(request).upload(image, { fileType: IMAGE_TYPES[mediaType], ...request.query });
+            // The body gate admits only the upload image types, and answers 411 for an empty body.
+            const mediaType = request.headers['content-type']?.split(';')[0]?.trim().toLowerCase() ?? '';
+            const { data, fileType } = await toFrameImage(request.body as Buffer, mediaType);
+            const contentId = await frameOf(request).upload(data, { fileType, ...request.query });
             return reply.status(201).send({ contentId });
         },
     );
