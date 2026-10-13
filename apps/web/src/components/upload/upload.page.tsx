@@ -1,25 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Checkbox, Group, Image, Stack, Text, Title } from '@mantine/core';
-import { Dropzone, type FileRejection } from '@mantine/dropzone';
+import { Dropzone } from '@mantine/dropzone';
 import { notifications } from '@mantine/notifications';
 import { IconPhoto, IconUpload, IconX } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import { NO_MATTE } from '../../api/mattes';
 import { useUploadArt } from '../../api/tv.mutations';
+import { IMAGE_TYPES, MAX_IMAGE_BYTES, rejectionMessage } from '../../api/upload.limits';
 import { useTv } from '../../tvs/tv.context';
 import { MattePicker } from '../art/matte.picker';
-
-/** The API's ceiling (apps/api's MAX_IMAGE_BYTES). A 4K JPEG is well under it. */
-export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
-
-const ACCEPT = ['image/jpeg', 'image/png'];
-
-const rejectionMessage = (rejection: FileRejection): string => {
-    const code = rejection.errors[0]?.code;
-    if (code === 'file-too-large') return `${rejection.file.name} is over 20MB.`;
-    if (code === 'file-invalid-type') return `${rejection.file.name} isn’t a JPEG or PNG.`;
-    return rejection.errors[0]?.message ?? `${rejection.file.name} can’t be uploaded.`;
-};
 
 const fileSize = (bytes: number) =>
     bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -70,7 +59,7 @@ export function UploadPage() {
             <Dropzone
                 onDrop={files => files[0] && choose(files[0])}
                 onReject={rejections => rejections[0] && setRejection(rejectionMessage(rejections[0]))}
-                accept={ACCEPT}
+                accept={IMAGE_TYPES}
                 maxSize={MAX_IMAGE_BYTES}
                 maxFiles={1}
                 multiple={false}
