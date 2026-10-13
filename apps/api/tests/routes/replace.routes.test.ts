@@ -44,7 +44,7 @@ describe('replacing a piece’s image', () => {
         await albums.addPieces(server.tvId, favourites, ['MY-F0001']);
         const rotations = server.container.get(RotationRepository);
         await rotations.set(server.tvId, { albumId: halloween });
-        await rotations.recordRotation(server.tvId, 'MY-F0001');
+        await rotations.recordRotation(server.tvId, 'MY-F0001', ['SAM-S0001', 'MY-F0001']);
         const image = uniqueJpeg();
 
         const response = await replace('MY-F0001', image);
@@ -53,7 +53,7 @@ describe('replacing a piece’s image', () => {
         expect(response.json()).toEqual({ contentId: 'MY-F0003', duplicate: false });
         expect(await albums.pieces(server.tvId, halloween)).toEqual(['SAM-S0001', 'MY-F0003', 'MY-F0099']);
         expect(await albums.pieces(server.tvId, favourites)).toEqual(['MY-F0003']);
-        expect((await rotations.get(server.tvId))?.lastContentId).toBe('MY-F0003');
+        expect(await rotations.get(server.tvId)).toMatchObject({ lastContentId: 'MY-F0003', shownThisRound: ['SAM-S0001', 'MY-F0003'] });
         expect(server.tv.calls.filter(call => !['list', 'current', 'getArtMode'].includes(call.method))).toEqual([
             { method: 'upload', args: [image, { fileType: 'jpg', matte: 'shadowbox_polar', portraitMatte: 'flexible_apricot' }] },
             { method: 'select', args: ['MY-F0003', { show: true, category: 'MY-C0002' }] },

@@ -82,7 +82,7 @@ export interface Rotation {
     albumId: string;
     albumName: string;
     intervalMinutes: number;
-    /** A random piece each time, or the album's order. */
+    /** Every piece once in random order before any repeats, or the album's order. */
     shuffle: boolean;
     lastContentId?: string;
     lastRotatedAt?: string;

@@ -27,7 +27,7 @@ describe('RotationRepository', () => {
         await rotations.set(server.tvId, { albumId, intervalMinutes: 10 });
         expect(await rotations.due()).toEqual([server.tvId]);
 
-        await rotations.recordRotation(server.tvId, 'MY-F0001');
+        await rotations.recordRotation(server.tvId, 'MY-F0001', ['MY-F0001']);
         expect(await rotations.due()).toEqual([]);
 
         await server.db
@@ -41,5 +41,26 @@ describe('RotationRepository', () => {
             .set({ lastRotatedAt: sql`now() - interval '10 minutes'` })
             .execute();
         expect(await rotations.due()).toEqual([server.tvId]);
+    });
+
+    it('keeps the round through a change of interval or order, and starts it afresh on another album', async () => {
+        await rotations.set(server.tvId, { albumId });
+        await rotations.recordRotation(server.tvId, 'MY-F0002', ['MY-F0001', 'MY-F0002']);
+
+        expect(await rotations.set(server.tvId, { albumId, intervalMinutes: 5, shuffle: false })).toMatchObject({
+            shownThisRound: ['MY-F0001', 'MY-F0002'],
+        });
+
+        const christmas = (await server.container.get(AlbumRepository).create(server.tvId, 'Christmas')).id;
+        expect(await rotations.set(server.tvId, { albumId: christmas })).toMatchObject({ lastContentId: undefined, shownThisRound: [] });
+    });
+
+    it('carries a replaced piece over as shown this round, whether or not it was the last', async () => {
+        await rotations.set(server.tvId, { albumId });
+        await rotations.recordRotation(server.tvId, 'MY-F0002', ['MY-F0001', 'MY-F0002']);
+
+        await rotations.replacePiece(server.tvId, 'MY-F0001', 'MY-F0009');
+
+        expect(await rotations.get(server.tvId)).toMatchObject({ lastContentId: 'MY-F0002', shownThisRound: ['MY-F0009', 'MY-F0002'] });
     });
 });

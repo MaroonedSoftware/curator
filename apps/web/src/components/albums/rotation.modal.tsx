@@ -48,7 +48,7 @@ export function RotationModal({ albumId, onClose }: { albumId?: string; onClose:
                     />
                     <Switch
                         label="Shuffle"
-                        description={shuffle ? 'A random piece each time.' : 'The album’s order, from the top.'}
+                        description={shuffle ? 'Every piece once, in random order, before any comes up again.' : 'The album’s order, from the top.'}
                         checked={shuffle}
                         onChange={event => setShuffle(event.currentTarget.checked)}
                     />

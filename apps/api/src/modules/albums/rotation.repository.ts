@@ -43,6 +43,7 @@ export class RotationRepository {
                     shuffle: shuffle ?? eb.ref('tvRotations.shuffle'),
                     lastContentId: sql`case when tv_rotations.album_id = excluded.album_id then tv_rotations.last_content_id end`,
                     lastRotatedAt: sql`case when tv_rotations.album_id = excluded.album_id then tv_rotations.last_rotated_at end`,
+                    shownThisRound: sql`case when tv_rotations.album_id = excluded.album_id then tv_rotations.shown_this_round else '{}' end`,
                     updatedAt: sql`now()`,
                 })),
             )
@@ -66,9 +67,16 @@ export class RotationRepository {
         return rows.map(row => row.tvId);
     }
 
-    /** Carries the rotation's progress over to a piece that replaced the one it last showed. */
-    async replaceLast(tvId: string, oldId: string, newId: string): Promise<void> {
-        await this.db.updateTable('tvRotations').set({ lastContentId: newId }).where('tvId', '=', tvId).where('lastContentId', '=', oldId).execute();
+    /** Carries the rotation's progress over to a piece that replaced one it showed: as the last piece, and as shown this round. */
+    async replacePiece(tvId: string, oldId: string, newId: string): Promise<void> {
+        await this.db
+            .updateTable('tvRotations')
+            .set(eb => ({
+                lastContentId: eb.case().when('lastContentId', '=', oldId).then(newId).else(eb.ref('lastContentId')).end(),
+                shownThisRound: sql`array_replace(shown_this_round, ${oldId}, ${newId})`,
+            }))
+            .where('tvId', '=', tvId)
+            .execute();
     }
 
     /** Resolves false when the TV had no rotation. */
@@ -77,11 +85,11 @@ export class RotationRepository {
         return result.numDeletedRows > 0n;
     }
 
-    /** Notes what the rotation just put on screen. */
-    async recordRotation(tvId: string, contentId: string): Promise<void> {
+    /** Notes what the rotation just put on screen, and which pieces have now been shown this round. */
+    async recordRotation(tvId: string, contentId: string, shownThisRound: string[]): Promise<void> {
         await this.db
             .updateTable('tvRotations')
-            .set({ lastContentId: contentId, lastRotatedAt: sql`now()` })
+            .set({ lastContentId: contentId, lastRotatedAt: sql`now()`, shownThisRound })
             .where('tvId', '=', tvId)
             .execute();
     }

@@ -29,6 +29,7 @@ export interface TvRotations {
     intervalMinutes: Generated<number>;
     lastContentId: string | null;
     lastRotatedAt: DateTime | null;
+    shownThisRound: Generated<string[]>;
     shuffle: Generated<boolean>;
     tvId: string;
     updatedAt: Generated<DateTime>;
