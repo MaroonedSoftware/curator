@@ -2,7 +2,7 @@ import type { ZodTypeProvider } from '@maroonedsoftware/fastify/zod';
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { FrameService } from '../modules/frame/frame.service.js';
-import { toFrameImage, UPLOAD_IMAGE_TYPES } from '../modules/frame/image.converter.js';
+import { toFrameImage, UPLOAD_IMAGE_TYPES, type FrameImage } from '../modules/frame/image.converter.js';
 
 const Raw = z.record(z.string(), z.unknown());
 
@@ -29,7 +29,14 @@ const Matte = z.string().regex(/^[a-z0-9_]+$/, 'not a matte id');
 const json = { body: ['application/json'] };
 
 /** The upload ceiling, matching ServerKit's binary parser. A 4K JPEG is well under it. */
-const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+
+/**
+ * An image body, as the TV takes it: a JPEG or PNG as sent, anything else converted. The body gate
+ * has already admitted only the upload image types, and answered 411 for an empty body.
+ */
+export const frameImageOf = (request: FastifyRequest): Promise<FrameImage> =>
+    toFrameImage(request.body as Buffer, request.headers['content-type']?.split(';')[0]?.trim().toLowerCase() ?? '');
 
 /** The {@link FrameService} each request resolved in `onRequest`, before its body is read. */
 const frames = new WeakMap<FastifyRequest, FrameService>();
@@ -110,15 +117,17 @@ const frameEndpoints: FastifyPluginAsync = async instance => {
             config: { body: UPLOAD_IMAGE_TYPES },
             schema: {
                 querystring: z.object({ matte: Matte.optional(), portraitMatte: Matte.optional() }),
-                response: { 201: z.object({ contentId: z.string() }) },
+                // 201 for a new piece; 200 when the TV already had this exact image, which isn't sent again.
+                response: {
+                    201: z.object({ contentId: z.string(), duplicate: z.literal(false) }),
+                    200: z.object({ contentId: z.string(), duplicate: z.literal(true) }),
+                },
             },
         },
         async (request, reply) => {
-            // The body gate admits only the upload image types, and answers 411 for an empty body.
-            const mediaType = request.headers['content-type']?.split(';')[0]?.trim().toLowerCase() ?? '';
-            const { data, fileType } = await toFrameImage(request.body as Buffer, mediaType);
-            const contentId = await frameOf(request).upload(data, { fileType, ...request.query });
-            return reply.status(201).send({ contentId });
+            const { data, fileType } = await frameImageOf(request);
+            const uploaded = await frameOf(request).upload(data, { fileType, ...request.query });
+            return uploaded.duplicate ? reply.status(200).send(uploaded) : reply.status(201).send(uploaded);
         },
     );
 

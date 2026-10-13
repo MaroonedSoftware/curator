@@ -42,6 +42,7 @@ describe('RotationService', () => {
     beforeEach(async () => {
         await server.db.deleteFrom('albums').execute();
         server.tv.calls.length = 0;
+        server.tv.artMode = true;
         server.tv.art.set('MY_F0002', { contentId: 'MY_F0002', categoryId: 'MY-C0002', raw: {} });
         albumId = (await albums.create(server.tvId, 'Halloween')).id;
     });
@@ -52,7 +53,7 @@ describe('RotationService', () => {
 
     const selects = () => server.tv.calls.filter(call => call.method === 'select').map(call => call.args);
 
-    it('shows the album’s pieces in order without waking the TV, by the TV’s own spelling, and records each', async () => {
+    it('shows the album’s pieces in order on a TV in art mode, by the TV’s own spelling, and records each', async () => {
         await albums.addPieces(server.tvId, albumId, ['MY-F0001', 'MY-F0002']);
         await rotations.set(server.tvId, { albumId, shuffle: false });
 
@@ -61,11 +62,22 @@ describe('RotationService', () => {
         expect(await service.advance(server.tvId)).toBe('MY-F0001');
 
         expect(selects()).toEqual([
-            ['MY-F0001', { show: false, category: 'MY-C0002' }],
-            ['MY_F0002', { show: false, category: 'MY-C0002' }],
-            ['MY-F0001', { show: false, category: 'MY-C0002' }],
+            ['MY-F0001', { show: true, category: 'MY-C0002' }],
+            ['MY_F0002', { show: true, category: 'MY-C0002' }],
+            ['MY-F0001', { show: true, category: 'MY-C0002' }],
         ]);
         expect(await rotations.get(server.tvId)).toMatchObject({ lastContentId: 'MY-F0001', lastRotatedAt: expect.anything() });
+    });
+
+    it('only selects the next piece on a TV out of art mode, so it isn’t switched into art mode', async () => {
+        await albums.addPieces(server.tvId, albumId, ['MY-F0001']);
+        await rotations.set(server.tvId, { albumId });
+        server.tv.artMode = false;
+
+        expect(await service.advance(server.tvId)).toBe('MY-F0001');
+
+        expect(selects()).toEqual([['MY-F0001', { show: false, category: 'MY-C0002' }]]);
+        expect(server.tv.artMode).toBe(false);
     });
 
     it('shuffles without showing the same piece twice running', async () => {

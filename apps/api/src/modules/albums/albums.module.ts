@@ -5,6 +5,7 @@ import { parseApiConfig } from '../../server/api.config.js';
 import type { DB } from '../data/db.js';
 import { TvService } from '../tvs/tv.service.js';
 import { AlbumRepository } from './album.repository.js';
+import { ArtReplacer } from './art.replacer.js';
 import { RotationRepository } from './rotation.repository.js';
 import { RotationScheduler } from './rotation.scheduler.js';
 import { RotationService } from './rotation.service.js';
@@ -32,6 +33,19 @@ export const AlbumsModule: ServerKitModule = {
         registry
             .register(RotationService)
             .useFactory(container => new RotationService(container.get(RotationRepository), container.get(AlbumRepository), container.get(TvService)))
+            .asSingleton();
+
+        registry
+            .register(ArtReplacer)
+            .useFactory(
+                container =>
+                    new ArtReplacer(
+                        container.get(TvService),
+                        container.get(AlbumRepository),
+                        container.get(RotationRepository),
+                        container.get(Logger),
+                    ),
+            )
             .asSingleton();
 
         registry

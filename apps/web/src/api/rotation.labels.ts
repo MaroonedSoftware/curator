@@ -1,5 +1,5 @@
-/** The intervals offered for a rotation, in minutes. The API takes anything from 1 to 1440. */
-export const INTERVALS = [5, 15, 30, 60, 120, 360, 720, 1440];
+/** The intervals offered for a rotation, in minutes: 1 to 30. The API takes anything from 1 to 1440. */
+export const INTERVALS = [1, 2, 3, 5, 10, 15, 20, 30];
 
 /** "5 minutes", "1 hour", "6 hours", "1 day". */
 export const intervalLabel = (minutes: number): string => {

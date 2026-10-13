@@ -71,22 +71,37 @@ export function useChangeMatte(tvId: string) {
     });
 }
 
-/** Uploads an image, then puts it on screen if asked. Resolves with the TV's content id. */
+/** Uploads an image, then puts it on screen if asked. Resolves with its piece, which may be one already on the TV. */
 export function useUploadArt(tvId: string) {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ image, matte, portraitMatte, show }: { image: File; matte: string; portraitMatte: string; show: boolean }) => {
-            const contentId = await tvApi(tvId).uploadArt(image, { matte, portraitMatte });
+            const uploaded = await tvApi(tvId).uploadArt(image, { matte, portraitMatte });
             if (show) {
-                await tvApi(tvId).selectArt(contentId, { show: true, category: Category.MyPhotos });
+                await tvApi(tvId).selectArt(uploaded.contentId, { show: true, category: Category.MyPhotos });
             }
-            return contentId;
+            return uploaded;
         },
         onError: notifyFailure,
         onSuccess: () => {
             void queryClient.invalidateQueries({ queryKey: queryKeys.allArt(tvId) });
             void queryClient.invalidateQueries({ queryKey: queryKeys.currentArt(tvId) });
             void queryClient.invalidateQueries({ queryKey: queryKeys.artMode(tvId) });
+        },
+    });
+}
+
+/** Swaps a piece's image. Everything that names pieces is read again: the art, what's on screen, the albums and the rotation. */
+export function useReplaceArt(tvId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ contentId, image }: { contentId: string; image: File }) => tvApi(tvId).replaceArt(contentId, image),
+        onError: notifyFailure,
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: queryKeys.allArt(tvId) });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.currentArt(tvId) });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.albums(tvId) });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.rotation(tvId) });
         },
     });
 }

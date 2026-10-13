@@ -17,10 +17,12 @@ beforeAll(() => {
     URL.revokeObjectURL = () => {};
 });
 
-function fakeTv() {
+/** A TV that saves an upload as MY-F0007, or, given `duplicateOf`, already has the image as that piece. */
+function fakeTv(duplicateOf?: string) {
     return fakeApi({
         ...withTv(),
-        [`POST ${TV_BASE}/art`]: () => jsonResponse({ contentId: 'MY-F0007' }, 201),
+        [`POST ${TV_BASE}/art`]: () =>
+            duplicateOf ? jsonResponse({ contentId: duplicateOf, duplicate: true }) : jsonResponse({ contentId: 'MY-F0007', duplicate: false }, 201),
         [`PUT ${TV_BASE}/art/current`]: () => noContent(),
         [`GET ${TV_BASE}/art/current`]: () => jsonResponse({ contentId: 'MY-F0007', raw: {} }),
         [`GET ${TV_BASE}/art-mode`]: () => jsonResponse({ on: true }),
@@ -56,6 +58,20 @@ describe('upload', () => {
             path: `${TV_BASE}/art/current`,
             body: { contentId: 'MY-F0007', show: true, category: 'MY-C0002' },
         });
+    });
+
+    it('says when the TV already had the image, and shows the piece already there', async () => {
+        const requests = fakeTv('MY_F0003');
+        const user = setupUser();
+
+        renderApp(`${TV_BASE}/upload`);
+        await user.upload(await waitFor(fileInput), jpeg());
+        await user.click(await screen.findByRole('button', { name: 'Upload' }));
+
+        expect(await screen.findByText(/already had this exact image, so it wasn’t sent again/)).toBeInTheDocument();
+        expect(screen.getByText('MY_F0003')).toBeInTheDocument();
+        expect(screen.getByText('The TV already has this image as MY_F0003.')).toBeInTheDocument();
+        expect(writes(requests)[1]).toMatchObject({ method: 'PUT', body: { contentId: 'MY_F0003', show: true, category: 'MY-C0002' } });
     });
 
     it('leaves the screen alone when asked to', async () => {

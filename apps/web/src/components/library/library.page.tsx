@@ -16,6 +16,7 @@ import { ArtViewer } from './art.viewer';
 import { CategoryLabels } from './category.labels';
 import { DeleteModal } from './delete.modal';
 import { MatteModal } from './matte.modal';
+import { ReplaceModal } from './replace.modal';
 
 export const ALL = 'all';
 
@@ -49,7 +50,7 @@ const VIEWS = [
 
 const matteOf = (item: ArtItem) => (typeof item.raw.matte_id === 'string' ? item.raw.matte_id : undefined);
 
-type Dialog = { kind: 'matte' | 'albums' | 'delete'; item: ArtItem };
+type Dialog = { kind: 'matte' | 'albums' | 'replace' | 'delete'; item: ArtItem };
 
 interface LibraryPageProps {
     category: string;
@@ -80,6 +81,7 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange, pi
             onShow={() => show(item)}
             onChangeMatte={() => setDialog({ kind: 'matte', item })}
             onAddToAlbum={() => setDialog({ kind: 'albums', item })}
+            onReplace={() => setDialog({ kind: 'replace', item })}
             onDelete={() => setDialog({ kind: 'delete', item })}
         />
     );
@@ -177,6 +179,7 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange, pi
                     onShow={() => show(open)}
                     onChangeMatte={() => setDialog({ kind: 'matte', item: open })}
                     onAddToAlbum={() => setDialog({ kind: 'albums', item: open })}
+                    onReplace={() => setDialog({ kind: 'replace', item: open })}
                     onDelete={() => {
                         // The piece is about to be gone, so the viewer closes rather than showing it.
                         onPieceChange(undefined);
@@ -186,6 +189,14 @@ export function LibraryPage({ category, onCategoryChange, view, onViewChange, pi
             )}
             {dialog?.kind === 'matte' && <MatteModal item={dialog.item} onClose={() => setDialog(undefined)} />}
             {dialog?.kind === 'albums' && <AddToAlbumModal contentId={dialog.item.contentId} onClose={() => setDialog(undefined)} />}
+            {dialog?.kind === 'replace' && (
+                <ReplaceModal
+                    contentId={dialog.item.contentId}
+                    onClose={() => setDialog(undefined)}
+                    // The old piece is gone, so an open viewer moves to the one standing in for it.
+                    onReplaced={next => piece !== undefined && onPieceChange(next)}
+                />
+            )}
             {dialog?.kind === 'delete' && <DeleteModal item={dialog.item} onClose={() => setDialog(undefined)} />}
         </Stack>
     );

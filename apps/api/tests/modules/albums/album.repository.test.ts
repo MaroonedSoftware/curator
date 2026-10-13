@@ -104,4 +104,19 @@ describe('AlbumRepository', () => {
         await server.db.deleteFrom('tvs').where('id', '=', otherTvId).execute();
         expect(await server.db.selectFrom('albums').selectAll().execute()).toEqual([]);
     });
+
+    it('replaces a piece in every album of the TV, in place, dropping it where the album already has the new one', async () => {
+        const halloween = await albums.create(tvId, 'Halloween');
+        const favourites = await albums.create(tvId, 'Favourites');
+        const theirs = await albums.create(otherTvId, 'Theirs');
+        await albums.addPieces(tvId, halloween.id, ['MY-F0001', 'MY-F0002']);
+        await albums.addPieces(tvId, favourites.id, ['MY-F0003', 'MY-F0001']);
+        await albums.addPieces(otherTvId, theirs.id, ['MY-F0001']);
+
+        await albums.replacePiece(tvId, 'MY_F0001', 'MY-F0003');
+
+        expect(await albums.pieces(tvId, halloween.id)).toEqual(['MY-F0003', 'MY-F0002']);
+        expect(await albums.pieces(tvId, favourites.id)).toEqual(['MY-F0003']);
+        expect(await albums.pieces(otherTvId, theirs.id)).toEqual(['MY-F0001']);
+    });
 });

@@ -16,3 +16,21 @@ export const rejectionMessage = (rejection: FileRejection): string => {
     if (code === 'file-invalid-type') return `${rejection.file.name} isn’t a ${IMAGE_TYPE_NAMES}.`;
     return rejection.errors[0]?.message ?? `${rejection.file.name} can’t be uploaded.`;
 };
+
+/** Whether a drag carries files, as opposed to text or an image dragged from the page itself. */
+export const carriesFiles = (dataTransfer: DataTransfer | null): boolean => dataTransfer?.types.includes('Files') ?? false;
+
+/**
+ * Files dropped somewhere other than a dropzone, sorted as a dropzone would sort them: the images
+ * the TV takes, and why each other file was turned away.
+ */
+export const sortDropped = (files: File[]): { images: File[]; rejections: string[] } => {
+    const images: File[] = [];
+    const rejections: string[] = [];
+    for (const file of files) {
+        if (!IMAGE_TYPES.includes(file.type)) rejections.push(`${file.name} isn’t a ${IMAGE_TYPE_NAMES}.`);
+        else if (file.size > MAX_IMAGE_BYTES) rejections.push(`${file.name} is over 20MB.`);
+        else images.push(file);
+    }
+    return { images, rejections };
+};

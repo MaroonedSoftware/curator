@@ -33,6 +33,14 @@ function fakeTv(art: Item[] = [upload, store], originals: string[] = []) {
             return noContent();
         },
         [`PUT ${TV_BASE}/art/MY-F0001/matte`]: () => noContent(),
+        // The new image stands in for MY-F0001 as MY-F0005.
+        [`POST ${TV_BASE}/art/MY-F0001/replace`]: () => {
+            state.art = state.art.map(item =>
+                item.contentId === 'MY-F0001' ? { ...item, contentId: 'MY-F0005', raw: { ...item.raw, content_id: 'MY-F0005' } } : item,
+            );
+            return jsonResponse({ contentId: 'MY-F0005', duplicate: false });
+        },
+        [`HEAD ${TV_BASE}/art/MY-F0005/original`]: () => new Response(null, { status: 200 }),
         [`HEAD ${TV_BASE}/art/MY-F0001/original`]: () => new Response(null, { status: originals.includes('MY-F0001') ? 200 : 404 }),
     });
     return { state, requests };
@@ -106,6 +114,41 @@ describe('library', () => {
         expect(writes(requests)).toEqual([expect.objectContaining({ method: 'DELETE', path: `${TV_BASE}/art/MY-F0001` })]);
     });
 
+    it('replaces an upload’s image after it is chosen', async () => {
+        const { requests } = fakeTv();
+        const user = setupUser();
+        const image = new File(['new'], 'new.jpg', { type: 'image/jpeg' });
+
+        renderApp(`${TV_BASE}/library`);
+        await user.click(await screen.findByRole('button', { name: 'Actions for MY-F0001' }));
+        await user.click(await screen.findByRole('menuitem', { name: 'Replace image…' }));
+        const dialog = await screen.findByRole('dialog', { name: 'Replace MY-F0001' });
+        expect(within(dialog).getByRole('button', { name: 'Replace' })).toBeDisabled();
+        await user.upload(dialog.querySelector<HTMLInputElement>('input[type="file"]')!, image);
+        expect(within(dialog).getByText('new.jpg')).toBeInTheDocument();
+        await user.click(within(dialog).getByRole('button', { name: 'Replace' }));
+
+        expect(await screen.findByText('MY-F0005')).toBeInTheDocument();
+        expect(screen.getByText('MY-F0001 is now MY-F0005.')).toBeInTheDocument();
+        expect(writes(requests)).toEqual([
+            expect.objectContaining({ method: 'POST', path: `${TV_BASE}/art/MY-F0001/replace`, body: image, headers: expect.any(Headers) }),
+        ]);
+        expect(writes(requests)[0]!.headers.get('content-type')).toBe('image/jpeg');
+    });
+
+    it('moves the viewer on to the piece that replaced the one it showed', async () => {
+        fakeTv();
+        const user = setupUser();
+
+        const { router } = renderApp(`${TV_BASE}/library?piece=MY-F0001`);
+        await user.click(await screen.findByRole('button', { name: 'Replace' }));
+        const dialog = await screen.findByRole('dialog', { name: 'Replace MY-F0001' });
+        await user.upload(dialog.querySelector<HTMLInputElement>('input[type="file"]')!, new File(['new'], 'new.jpg', { type: 'image/jpeg' }));
+        await user.click(within(dialog).getByRole('button', { name: 'Replace' }));
+
+        await waitFor(() => expect(router.state.location.search).toEqual({ piece: 'MY-F0005' }));
+    });
+
     it('offers no delete for a piece that isn’t an upload', async () => {
         fakeTv();
         const user = setupUser();
@@ -115,6 +158,7 @@ describe('library', () => {
 
         expect(await screen.findByRole('menuitem', { name: 'Show on TV' })).toBeInTheDocument();
         expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', { name: 'Replace image…' })).not.toBeInTheDocument();
     });
 
     it('changes the matte, starting from the current one', async () => {

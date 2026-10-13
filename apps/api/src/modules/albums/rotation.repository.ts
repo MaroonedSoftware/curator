@@ -66,6 +66,11 @@ export class RotationRepository {
         return rows.map(row => row.tvId);
     }
 
+    /** Carries the rotation's progress over to a piece that replaced the one it last showed. */
+    async replaceLast(tvId: string, oldId: string, newId: string): Promise<void> {
+        await this.db.updateTable('tvRotations').set({ lastContentId: newId }).where('tvId', '=', tvId).where('lastContentId', '=', oldId).execute();
+    }
+
     /** Resolves false when the TV had no rotation. */
     async clear(tvId: string): Promise<boolean> {
         const result = await this.db.deleteFrom('tvRotations').where('tvId', '=', tvId).executeTakeFirst();
