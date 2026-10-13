@@ -30,6 +30,7 @@
         "@maroonedsoftware/zod": "^0.8.0",
         "fast-json-stringify": "^7.0.0",
         "fastify": "^5.12.5",
+        "fflate": "^0.8.3",
         "injectkit": "^1.7.1",
         "kysely": "^0.29.6",
         "luxon": "^3.7.2",

@@ -81,4 +81,14 @@ describe('OriginalStore', () => {
 
         expect(await new OriginalStore(root).forTv('a').withFingerprint(fingerprintOf(Buffer.from('kept before')))).toEqual(['MY-F0007']);
     });
+
+    it('lists every kept original by normalized id, and none for a TV with no directory', async () => {
+        await mkdir(join(root, 'a'));
+        await writeFile(join(root, 'a', 'MY_F0007.jpg'), 'kept before');
+        const tv = new OriginalStore(root).forTv('a');
+        await tv.save('MY-F0008', 'png', Buffer.from('saved now'));
+
+        expect((await tv.contentIds()).sort()).toEqual(['MY-F0007', 'MY-F0008']);
+        expect(await new OriginalStore(root).forTv('b').contentIds()).toEqual([]);
+    });
 });

@@ -59,6 +59,9 @@ importers:
       fastify:
         specifier: ^5.12.5
         version: 5.12.5
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       injectkit:
         specifier: ^1.7.1
         version: 1.7.1
@@ -147,6 +150,9 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.170.18
         version: 1.170.42(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       react:
         specifier: ^19.2.8
         version: 19.3.0
@@ -2815,6 +2821,9 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
   fido2-lib@3.5.9:
     resolution: {integrity: sha512-OfiX3VetTaoiuA9Bk8QnIdDVEOyZyR8m6JE++9zLQ3sbpsQN8thaJoLHcDi770cOKGtzvSH49mp2njtXUm6S7w==}
@@ -6848,6 +6857,8 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
       picomatch: 4.0.7
+
+  fflate@0.8.3: {}
 
   fido2-lib@3.5.9:
     dependencies:
