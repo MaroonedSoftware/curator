@@ -126,6 +126,18 @@ describe('album', () => {
         expect(writes(requests)[0]!.headers.get('content-type')).toBe('image/jpeg');
     });
 
+    it('names the files it turns away from a drop that also has images in it, uploading the images', async () => {
+        const { state } = fakeTv();
+        const user = setupUser({ applyAccept: false });
+
+        renderApp(`${TV_BASE}/albums/${CHRISTMAS}`);
+        await user.upload(await waitFor(dropzoneInput), [image('one.jpg'), image('photo.heic', 'image/heic'), image('two.jpg')]);
+
+        expect(await screen.findByText('2 images uploaded to the TV and added to Christmas.')).toBeInTheDocument();
+        expect(screen.getByText('photo.heic isn’t a JPEG or PNG.')).toBeInTheDocument();
+        expect(state.albums[1]!.contentIds).toEqual(['MY-F0010', 'MY-F0011']);
+    });
+
     it('turns away a file that isn’t a JPEG or PNG, uploading nothing', async () => {
         const { requests } = fakeTv();
         const user = setupUser({ applyAccept: false });

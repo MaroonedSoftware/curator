@@ -17,7 +17,6 @@ export function AlbumDropzone({ albumId, albumName }: { albumId: string; albumNa
     const [rejections, setRejections] = useState<string[]>([]);
 
     const drop = (images: File[]) => {
-        setRejections([]);
         if (images.length === 0) return;
         upload.mutate(images, {
             onSuccess: added => {
@@ -29,7 +28,17 @@ export function AlbumDropzone({ albumId, albumName }: { albumId: string; albumNa
         });
     };
     const reject = (rejected: FileRejection[]) => setRejections(rejected.map(rejectionMessage));
-    const props = { onDrop: drop, onReject: reject, accept: IMAGE_TYPES, maxSize: MAX_IMAGE_BYTES, multiple: true, disabled: upload.isPending };
+    // A drop reports its rejected files before its accepted ones, so the last drop's messages are
+    // cleared here, as the drop lands, rather than when its accepted files start uploading.
+    const props = {
+        onDropAny: () => setRejections([]),
+        onDrop: drop,
+        onReject: reject,
+        accept: IMAGE_TYPES,
+        maxSize: MAX_IMAGE_BYTES,
+        multiple: true,
+        disabled: upload.isPending,
+    };
 
     return (
         <>
