@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { FrameConnectionError, FrameError, FrameRequestError, FrameTimeoutError, FrameUnauthorizedError } from '@curator/frame';
 import { readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -212,9 +213,12 @@ describe('a TV’s write endpoints', () => {
     });
 });
 
+/** A JPEG header and bytes no other call shares, so no upload is taken for a duplicate of another. */
+const uniqueJpeg = () => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]), randomBytes(16)]);
+
 describe('uploading to a TV', () => {
     let server: Awaited<ReturnType<typeof createTvTestServer>>;
-    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
+    let jpeg: Buffer;
 
     beforeAll(async () => {
         server = await createTvTestServer(import.meta.url);
@@ -222,6 +226,7 @@ describe('uploading to a TV', () => {
 
     beforeEach(() => {
         server.tv.calls.length = 0;
+        jpeg = uniqueJpeg();
     });
 
     afterAll(async () => {
@@ -237,7 +242,7 @@ describe('uploading to a TV', () => {
         });
 
         expect(response.statusCode).toBe(201);
-        expect(response.json()).toEqual({ contentId: 'MY-F0003' });
+        expect(response.json()).toEqual({ contentId: 'MY-F0003', duplicate: false });
         expect(server.tv.calls).toEqual([{ method: 'upload', args: [jpeg, { fileType: 'jpg' }] }]);
     });
 
@@ -341,7 +346,7 @@ describe('uploading to a TV', () => {
 
 describe('keeping uploaded originals', () => {
     let server: Awaited<ReturnType<typeof createTvTestServer>>;
-    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
+    let jpeg: Buffer;
     const tvDir = () => join(server.originalsDir, server.tvId);
     const exists = (path: string) =>
         stat(path).then(
@@ -361,6 +366,10 @@ describe('keeping uploaded originals', () => {
 
     beforeAll(async () => {
         server = await createTvTestServer(import.meta.url);
+    });
+
+    beforeEach(() => {
+        jpeg = uniqueJpeg();
     });
 
     afterAll(async () => {
@@ -399,6 +408,71 @@ describe('keeping uploaded originals', () => {
         } finally {
             await rm(tvDir(), { force: true });
         }
+    });
+
+    it('POST …/art answers the piece already on the TV for the same image again, without sending it', async () => {
+        const contentId = await upload();
+        server.tv.calls.length = 0;
+
+        const again = await server.app.inject({
+            method: 'POST',
+            url: `${server.base}/art?matte=shadowbox_polar`,
+            headers: { 'content-type': 'image/jpeg' },
+            payload: jpeg,
+        });
+
+        expect(again.statusCode).toBe(200);
+        expect(again.json()).toEqual({ contentId, duplicate: true });
+        expect(server.tv.calls.map(call => call.method)).toEqual(['list']);
+    });
+
+    it('POST …/art answers the TV’s own spelling of the piece already there', async () => {
+        const contentId = await upload();
+        // As newer firmware lists it.
+        const item = server.tv.art.get(contentId)!;
+        server.tv.art.delete(contentId);
+        server.tv.art.set(contentId.replace('-', '_'), { ...item, contentId: contentId.replace('-', '_') });
+
+        const again = await server.app.inject({
+            method: 'POST',
+            url: `${server.base}/art`,
+            headers: { 'content-type': 'image/jpeg' },
+            payload: jpeg,
+        });
+
+        expect(again.json()).toEqual({ contentId: contentId.replace('-', '_'), duplicate: true });
+    });
+
+    it('POST …/art uploads the image again once its piece has gone from the TV', async () => {
+        server.tv.calls.length = 0;
+        const contentId = await upload();
+        // Deleted on the TV itself, so curator still has the original.
+        server.tv.art.delete(contentId);
+
+        const again = await server.app.inject({
+            method: 'POST',
+            url: `${server.base}/art`,
+            headers: { 'content-type': 'image/jpeg' },
+            payload: jpeg,
+        });
+
+        expect(again.statusCode).toBe(201);
+        expect(again.json()).toMatchObject({ duplicate: false });
+        expect(server.tv.calls.filter(call => call.method === 'upload')).toHaveLength(2);
+    });
+
+    it('POST …/art uploads the image again once curator has deleted its piece', async () => {
+        const contentId = await upload();
+        await server.app.inject({ method: 'DELETE', url: `${server.base}/art/${contentId}` });
+
+        const again = await server.app.inject({
+            method: 'POST',
+            url: `${server.base}/art`,
+            headers: { 'content-type': 'image/jpeg' },
+            payload: jpeg,
+        });
+
+        expect(again.statusCode).toBe(201);
     });
 
     it('GET …/art/:contentId/original answers the kept image, named for download', async () => {

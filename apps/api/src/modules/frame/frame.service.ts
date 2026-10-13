@@ -1,7 +1,8 @@
 import type { ArtItem, DeviceInfo, FrameClient, Thumbnail, UploadOptions } from '@curator/frame';
 import { httpError } from '@maroonedsoftware/errors';
 import type { Logger } from '@maroonedsoftware/logger';
-import type { Original, TvOriginals } from './original.store.js';
+import { normalizeContentId } from './content.id.js';
+import { fingerprintOf, type Original, type TvOriginals } from './original.store.js';
 import type { ThumbnailBatcher } from './thumbnail.batcher.js';
 import { toHttpError } from './frame.http.errors.js';
 
@@ -29,6 +30,9 @@ export function uniqueArt(items: ArtItem[]): ListedArt[] {
     }
     return [...byId.values()];
 }
+
+/** An upload's piece: new, or already on the TV with this exact image. */
+export type Uploaded = { contentId: string; duplicate: false } | { contentId: string; duplicate: true };
 
 export interface CurrentArt {
     contentId?: string;
@@ -103,15 +107,42 @@ export class FrameService {
      * Resolves with the TV-assigned content id once the TV announces the image, and keeps the image
      * on disk. Failing to keep it is only logged: the TV has the image by then, so an error would
      * invite a retry that puts a second copy on the TV.
+     *
+     * An image byte for byte the same as one uploaded before, and still on the TV, isn't sent again:
+     * the piece already there is answered instead, as the TV spells its id, with `duplicate` set.
+     * Its mattes are left as they are.
      */
-    async upload(image: Buffer, opts: UploadOptions & Required<Pick<UploadOptions, 'fileType'>>): Promise<string> {
+    async upload(image: Buffer, opts: UploadOptions & Required<Pick<UploadOptions, 'fileType'>>): Promise<Uploaded> {
+        const existing = await this.alreadyOnTv(image);
+        if (existing) {
+            return { contentId: existing, duplicate: true };
+        }
         const contentId = await this.call(() => this.client.upload(image, opts));
         try {
             await this.originals?.store.save(contentId, opts.fileType, image);
         } catch (error) {
             this.originals?.logger.error(`could not keep the original of ${contentId}`, error);
         }
-        return contentId;
+        return { contentId, duplicate: false };
+    }
+
+    /**
+     * The piece on the TV with this exact image, if curator uploaded one. A match whose piece has
+     * since gone from the TV doesn't count. Failing to read the fingerprints is only logged, and
+     * the image is uploaded as if it were new.
+     */
+    private async alreadyOnTv(image: Buffer): Promise<string | undefined> {
+        if (!this.originals) return undefined;
+        let matches: string[];
+        try {
+            matches = await this.originals.store.withFingerprint(fingerprintOf(image));
+        } catch (error) {
+            this.originals.logger.error('could not read the fingerprints of the kept originals', error);
+            return undefined;
+        }
+        if (matches.length === 0) return undefined;
+        const onTv = await this.list();
+        return onTv.find(item => matches.includes(normalizeContentId(item.contentId)))?.contentId;
     }
 
     // The writes below are fire-and-forget on the TV's side: they resolve once the request is

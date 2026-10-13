@@ -111,15 +111,19 @@ const frameEndpoints: FastifyPluginAsync = async instance => {
             config: { body: Object.keys(IMAGE_TYPES) },
             schema: {
                 querystring: z.object({ matte: Matte.optional(), portraitMatte: Matte.optional() }),
-                response: { 201: z.object({ contentId: z.string() }) },
+                // 201 for a new piece; 200 when the TV already had this exact image, which isn't sent again.
+                response: {
+                    201: z.object({ contentId: z.string(), duplicate: z.literal(false) }),
+                    200: z.object({ contentId: z.string(), duplicate: z.literal(true) }),
+                },
             },
         },
         async (request, reply) => {
             // The body gate admits only the two image types, and answers 411 for an empty body.
             const mediaType = request.headers['content-type']?.split(';')[0]?.trim().toLowerCase() as keyof typeof IMAGE_TYPES;
             const image = request.body as Buffer;
-            const contentId = await frameOf(request).upload(image, { fileType: IMAGE_TYPES[mediaType], ...request.query });
-            return reply.status(201).send({ contentId });
+            const uploaded = await frameOf(request).upload(image, { fileType: IMAGE_TYPES[mediaType], ...request.query });
+            return uploaded.duplicate ? reply.status(200).send(uploaded) : reply.status(201).send(uploaded);
         },
     );
 

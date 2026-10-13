@@ -1,8 +1,8 @@
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { OriginalStore } from '../../../src/modules/frame/original.store.js';
+import { fingerprintOf, OriginalStore } from '../../../src/modules/frame/original.store.js';
 
 describe('OriginalStore', () => {
     let root: string;
@@ -56,5 +56,29 @@ describe('OriginalStore', () => {
         await store.forTv('a').save('MY-F0001', 'jpg', Buffer.from('x'));
 
         expect(await readdir(join(root, 'a'))).toEqual(['MY-F0001.jpg']);
+    });
+
+    it('finds the originals with an image’s fingerprint, by normalized id, keeping in step with saves and deletes', async () => {
+        const tv = store.forTv('a');
+        const same = Buffer.from('the same image');
+        await tv.save('MY_F0001', 'jpg', same);
+
+        expect(await tv.withFingerprint(fingerprintOf(same))).toEqual(['MY-F0001']);
+
+        await tv.save('MY-F0002', 'png', same);
+        await tv.save('MY-F0003', 'jpg', Buffer.from('another image'));
+        expect(await tv.withFingerprint(fingerprintOf(same))).toEqual(['MY-F0001', 'MY-F0002']);
+
+        await tv.delete('MY-F0001');
+        expect(await tv.withFingerprint(fingerprintOf(same))).toEqual(['MY-F0002']);
+        expect(await store.forTv('b').withFingerprint(fingerprintOf(same))).toEqual([]);
+    });
+
+    it('fingerprints originals already on disk, as after a restart, ignoring temporary files', async () => {
+        await mkdir(join(root, 'a'));
+        await writeFile(join(root, 'a', 'MY_F0007.jpg'), 'kept before');
+        await writeFile(join(root, 'a', 'MY-F0008.jpg.1234.tmp'), 'kept before');
+
+        expect(await new OriginalStore(root).forTv('a').withFingerprint(fingerprintOf(Buffer.from('kept before')))).toEqual(['MY-F0007']);
     });
 });
