@@ -45,7 +45,7 @@ describe('rotation', () => {
 
     it('keeps its progress for the same album and starts afresh for another', async () => {
         await inject('PUT', { albumId: halloween, intervalMinutes: 10 });
-        await server.container.get(RotationRepository).recordRotation(server.tvId, 'MY-F0001');
+        await server.container.get(RotationRepository).recordRotation(server.tvId, 'MY-F0001', ['MY-F0001']);
 
         const same = (await inject('PUT', { albumId: halloween, intervalMinutes: 15 })).json();
         expect(same).toMatchObject({ lastContentId: 'MY-F0001', lastRotatedAt: expect.any(String), nextRotationAt: expect.any(String) });

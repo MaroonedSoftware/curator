@@ -49,7 +49,7 @@ export class ArtReplacer {
         }
 
         await this.albums.replacePiece(tvId, from, to);
-        await this.rotations.replaceLast(tvId, from, to);
+        await this.rotations.replacePiece(tvId, from, to);
         if (onScreen !== undefined && normalizeContentId(onScreen) === from) {
             // As the rotation does: a TV only repaints for `show`, which also switches it into art mode, so
             // show the new piece when art mode is already on, and otherwise only select it.

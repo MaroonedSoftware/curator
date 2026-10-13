@@ -6,21 +6,60 @@ import { TvService } from '../../../src/modules/tvs/tv.service.js';
 import { createTvTestServer } from '../../test.server.js';
 
 describe('nextPiece', () => {
+    const ordered = (last?: string) => nextPiece(['A', 'B', 'C'], { last, shownThisRound: [] }, false)?.contentId;
+
     it('walks the album in order, wrapping, and starts at the top', () => {
-        expect(nextPiece(['A', 'B', 'C'], undefined, false)).toBe('A');
-        expect(nextPiece(['A', 'B', 'C'], 'A', false)).toBe('B');
-        expect(nextPiece(['A', 'B', 'C'], 'C', false)).toBe('A');
-        expect(nextPiece(['A', 'B', 'C'], 'gone', false)).toBe('A');
+        expect(ordered()).toBe('A');
+        expect(ordered('A')).toBe('B');
+        expect(ordered('C')).toBe('A');
+        expect(ordered('gone')).toBe('A');
     });
 
-    it('shuffles without repeating the last piece, unless it is the only one', () => {
-        expect(nextPiece(['A', 'B', 'C'], 'A', true, () => 0)).toBe('B');
-        expect(nextPiece(['A', 'B', 'C'], 'A', true, () => 0.99)).toBe('C');
-        expect(nextPiece(['A'], 'A', true, () => 0.5)).toBe('A');
+    it('keeps no round in order', () => {
+        expect(nextPiece(['A', 'B'], { last: 'A', shownThisRound: ['A'] }, false)).toEqual({ contentId: 'B', shownThisRound: [] });
+    });
+
+    it('shuffles among the pieces not yet shown this round', () => {
+        expect(nextPiece(['A', 'B', 'C'], { shownThisRound: [] }, true, () => 0.99)).toEqual({ contentId: 'C', shownThisRound: ['C'] });
+        expect(nextPiece(['A', 'B', 'C'], { last: 'C', shownThisRound: ['C'] }, true, () => 0)).toEqual({
+            contentId: 'A',
+            shownThisRound: ['C', 'A'],
+        });
+        expect(nextPiece(['A', 'B', 'C'], { last: 'A', shownThisRound: ['C', 'A'] }, true, () => 0.99)).toEqual({
+            contentId: 'B',
+            shownThisRound: ['C', 'A', 'B'],
+        });
+    });
+
+    it('shows every piece once per round, whatever the random numbers', () => {
+        let progress = { last: undefined as string | undefined, shownThisRound: [] as string[] };
+        const shown: string[] = [];
+        for (let i = 0; i < 8; i++) {
+            const next = nextPiece(['A', 'B', 'C', 'D'], progress, true, () => 0)!;
+            shown.push(next.contentId);
+            progress = { last: next.contentId, shownThisRound: next.shownThisRound };
+        }
+        expect(shown.slice(0, 4).sort()).toEqual(['A', 'B', 'C', 'D']);
+        expect(shown.slice(4).sort()).toEqual(['A', 'B', 'C', 'D']);
+    });
+
+    it('opens a new round with anything but the piece that closed the last, unless it is the only one', () => {
+        expect(nextPiece(['A', 'B', 'C'], { last: 'A', shownThisRound: ['B', 'C', 'A'] }, true, () => 0)).toEqual({
+            contentId: 'B',
+            shownThisRound: ['B'],
+        });
+        expect(nextPiece(['A'], { last: 'A', shownThisRound: ['A'] }, true, () => 0.5)).toEqual({ contentId: 'A', shownThisRound: ['A'] });
+    });
+
+    it('lets pieces added mid-round join it, and drops pieces since removed', () => {
+        expect(nextPiece(['A', 'B', 'D'], { last: 'C', shownThisRound: ['A', 'C'] }, true, () => 0.99)).toEqual({
+            contentId: 'D',
+            shownThisRound: ['A', 'D'],
+        });
     });
 
     it('has nothing for an empty album', () => {
-        expect(nextPiece([], undefined, true)).toBeUndefined();
+        expect(nextPiece([], { shownThisRound: [] }, true)).toBeUndefined();
     });
 });
 
@@ -101,6 +140,18 @@ describe('RotationService', () => {
         expect(await service.advance(server.tvId)).toBe('MY-F0001');
         expect(await service.advance(server.tvId)).toBe('MY_F0002');
         expect(await service.advance(server.tvId)).toBe('MY-F0001');
+    });
+
+    it('records the pieces shown this round, and starts a new round once every piece has come up', async () => {
+        await albums.addPieces(server.tvId, albumId, ['MY-F0001', 'MY-F0002']);
+        await rotations.set(server.tvId, { albumId });
+
+        await service.advance(server.tvId);
+        expect(await rotations.get(server.tvId)).toMatchObject({ shownThisRound: ['MY-F0001'] });
+        await service.advance(server.tvId);
+        expect(await rotations.get(server.tvId)).toMatchObject({ shownThisRound: ['MY-F0001', 'MY-F0002'] });
+        await service.advance(server.tvId);
+        expect(await rotations.get(server.tvId)).toMatchObject({ lastContentId: 'MY-F0001', shownThisRound: ['MY-F0001'] });
     });
 
     it('skips pieces no longer on the TV', async () => {
