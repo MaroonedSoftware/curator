@@ -128,6 +128,26 @@ export class AlbumRepository {
         });
     }
 
+    /**
+     * Points every album of the TV that holds `oldId` at `newId` instead, in the same place. An album
+     * already holding `newId` just loses `oldId`, since a piece is in an album at most once.
+     */
+    async replacePiece(tvId: string, oldId: string, newId: string): Promise<void> {
+        const [from, to] = [normalizeContentId(oldId), normalizeContentId(newId)];
+        if (from === to) return;
+        await this.db.transaction().execute(async trx => {
+            const albumsOfTv = trx.selectFrom('albums').select('id').where('tvId', '=', tvId);
+            const holdingNew = trx.selectFrom('albumPieces').select('albumId').where('contentId', '=', to);
+            await trx
+                .deleteFrom('albumPieces')
+                .where('contentId', '=', from)
+                .where('albumId', 'in', albumsOfTv)
+                .where('albumId', 'in', holdingNew)
+                .execute();
+            await trx.updateTable('albumPieces').set({ contentId: to }).where('contentId', '=', from).where('albumId', 'in', albumsOfTv).execute();
+        });
+    }
+
     /** Resolves false when the piece was not in the album. */
     async removePiece(tvId: string, id: string, contentId: string): Promise<boolean> {
         await this.get(tvId, id);

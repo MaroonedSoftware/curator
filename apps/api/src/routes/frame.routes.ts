@@ -28,9 +28,13 @@ const Matte = z.string().regex(/^[a-z0-9_]+$/, 'not a matte id');
 const json = { body: ['application/json'] };
 
 /** The upload ceiling, matching ServerKit's binary parser. A 4K JPEG is well under it. */
-const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
-const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png' } as const;
+export const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png' } as const;
+
+/** The file type of an image body. The body gate has already admitted only the two image types. */
+export const fileTypeOf = (request: FastifyRequest): (typeof IMAGE_TYPES)[keyof typeof IMAGE_TYPES] =>
+    IMAGE_TYPES[request.headers['content-type']?.split(';')[0]?.trim().toLowerCase() as keyof typeof IMAGE_TYPES];
 
 /** The {@link FrameService} each request resolved in `onRequest`, before its body is read. */
 const frames = new WeakMap<FastifyRequest, FrameService>();
@@ -120,9 +124,7 @@ const frameEndpoints: FastifyPluginAsync = async instance => {
         },
         async (request, reply) => {
             // The body gate admits only the two image types, and answers 411 for an empty body.
-            const mediaType = request.headers['content-type']?.split(';')[0]?.trim().toLowerCase() as keyof typeof IMAGE_TYPES;
-            const image = request.body as Buffer;
-            const uploaded = await frameOf(request).upload(image, { fileType: IMAGE_TYPES[mediaType], ...request.query });
+            const uploaded = await frameOf(request).upload(request.body as Buffer, { fileType: fileTypeOf(request), ...request.query });
             return uploaded.duplicate ? reply.status(200).send(uploaded) : reply.status(201).send(uploaded);
         },
     );
