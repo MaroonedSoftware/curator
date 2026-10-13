@@ -1,6 +1,6 @@
 import { ActionIcon, Badge, Card, Group, Menu, Stack, Text } from '@mantine/core';
-import { IconDeviceTv, IconDots, IconPencil, IconTrash } from '@tabler/icons-react';
-import type { Tv } from '../../api/api.client';
+import { IconDeviceTv, IconDots, IconDownload, IconPencil, IconTrash } from '@tabler/icons-react';
+import { tvApi, type Tv } from '../../api/api.client';
 
 interface TvCardProps {
     tv: Tv;
@@ -40,6 +40,9 @@ export function TvCard({ tv, onRename, onRemove }: TvCardProps) {
                         <Menu.Dropdown>
                             <Menu.Item leftSection={<IconPencil size={16} />} onClick={onRename}>
                                 Rename
+                            </Menu.Item>
+                            <Menu.Item component="a" href={tvApi(tv.id).backupUrl} download leftSection={<IconDownload size={16} />}>
+                                Back up
                             </Menu.Item>
                             <Menu.Item color="red" leftSection={<IconTrash size={16} />} onClick={onRemove}>
                                 Remove

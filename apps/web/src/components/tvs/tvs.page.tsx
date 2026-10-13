@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Skeleton, Stack, Text, Title } from '@mantine/core';
+import { Button, Group, Skeleton, Stack, Text, Title } from '@mantine/core';
+import { IconDownload } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
-import type { Tv } from '../../api/api.client';
+import { api, type Tv } from '../../api/api.client';
 import { tvsOptions } from '../../api/tvs.queries';
 import { ErrorAlert } from '../shared/error.alert';
 import { ConnectTvPanel } from './connect.tv.panel';
@@ -18,7 +19,14 @@ export function TvsPage() {
 
     return (
         <Stack maw={720}>
-            <Title order={2}>TVs</Title>
+            <Group justify="space-between">
+                <Title order={2}>TVs</Title>
+                {tvs.isSuccess && tvs.data.length > 0 && (
+                    <Button component="a" href={api.backupUrl} download variant="light" leftSection={<IconDownload size={16} />}>
+                        Back up all TVs
+                    </Button>
+                )}
+            </Group>
             {tvs.isError && <ErrorAlert error={tvs.error} />}
             {tvs.isPending && <Skeleton h={90} />}
             {tvs.isSuccess && tvs.data.length === 0 && <Text c="dimmed">No TVs yet. Add one below.</Text>}

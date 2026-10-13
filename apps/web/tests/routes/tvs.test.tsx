@@ -158,4 +158,24 @@ describe('TVs page', () => {
         expect(writes(requests)).toEqual([expect.objectContaining({ method: 'DELETE', path: `/tvs/${living.id}` })]);
         expect(await screen.findByText('No TVs yet. Add one below.')).toBeInTheDocument();
     });
+
+    it('offers a backup of every TV, and of each one from its menu', async () => {
+        fakeTvsApi();
+        const user = setupUser();
+
+        renderApp('/tvs');
+
+        expect(await screen.findByRole('link', { name: 'Back up all TVs' })).toHaveAttribute('href', '/api/backup');
+        await user.click(await screen.findByRole('button', { name: 'Actions for Living Room' }));
+        expect(await screen.findByRole('menuitem', { name: 'Back up' })).toHaveAttribute('href', `/api/tvs/${living.id}/backup`);
+    });
+
+    it('offers no backup when there are no TVs', async () => {
+        fakeTvsApi([]);
+
+        renderApp('/tvs');
+
+        expect(await screen.findByText('No TVs yet. Add one below.')).toBeInTheDocument();
+        expect(screen.queryByRole('link', { name: 'Back up all TVs' })).not.toBeInTheDocument();
+    });
 });
