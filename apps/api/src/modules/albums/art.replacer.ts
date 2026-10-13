@@ -1,13 +1,10 @@
 import { httpError } from '@maroonedsoftware/errors';
 import type { Logger } from '@maroonedsoftware/logger';
 import { normalizeContentId } from '../frame/content.id.js';
-import type { ListedArt, Uploaded } from '../frame/frame.service.js';
+import { type ListedArt, MY_PHOTOS, type Uploaded } from '../frame/frame.service.js';
 import type { TvService } from '../tvs/tv.service.js';
 import type { AlbumRepository } from './album.repository.js';
 import type { RotationRepository } from './rotation.repository.js';
-
-/** My Photos: where the TV files uploads. */
-const MY_PHOTOS = 'MY-C0002';
 
 /** Uploads are ours to replace: anything in My Photos, or with an upload's id. The Art Store's pieces can't be deleted. */
 const isUpload = (item: ListedArt) => item.categoryIds.includes(MY_PHOTOS) || /^MY[-_]F/.test(item.contentId);

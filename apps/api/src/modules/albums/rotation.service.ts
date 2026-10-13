@@ -1,6 +1,6 @@
-import type { ArtItem } from '@curator/frame';
 import { httpError } from '@maroonedsoftware/errors';
 import { normalizeContentId } from '../frame/content.id.js';
+import { type ListedArt, MY_PHOTOS } from '../frame/frame.service.js';
 import type { TvService } from '../tvs/tv.service.js';
 import type { AlbumRepository } from './album.repository.js';
 import type { RotationRepository } from './rotation.repository.js';
@@ -43,7 +43,7 @@ export class RotationService {
             throw httpError(404).withDetails({ reason: 'the TV is not rotating' });
         }
         const frame = await this.tvs.frameFor(tvId);
-        const onTv = new Map<string, ArtItem>((await frame.list()).map(item => [normalizeContentId(item.contentId), item]));
+        const onTv = new Map<string, ListedArt>((await frame.list()).map(item => [normalizeContentId(item.contentId), item]));
         // In album order, so an ordered rotation walks the album, skipping pieces since deleted from the TV.
         const candidates = (await this.albums.pieces(tvId, rotation.albumId)).filter(id => onTv.has(id));
         const next = nextPiece(candidates, rotation.lastContentId ?? undefined, rotation.shuffle, this.random);
@@ -54,7 +54,9 @@ export class RotationService {
         // A TV only repaints for `show`, which also switches it into art mode: so show the piece when art
         // mode is already on, and otherwise only select it, ready for when art mode comes back.
         const show = await frame.getArtMode();
-        await frame.select(item.contentId, { show, category: item.categoryId });
+        // A 2025 Frame lists uploads under MY-C0008 as well as My Photos, but only selects them from My Photos.
+        const category = item.categoryIds.includes(MY_PHOTOS) ? MY_PHOTOS : item.categoryId;
+        await frame.select(item.contentId, { show, category });
         await this.rotations.recordRotation(tvId, next);
         return item.contentId;
     }

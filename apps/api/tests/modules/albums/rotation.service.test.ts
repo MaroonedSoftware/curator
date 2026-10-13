@@ -42,6 +42,7 @@ describe('RotationService', () => {
     beforeEach(async () => {
         await server.db.deleteFrom('albums').execute();
         server.tv.calls.length = 0;
+        server.tv.extraListEntries.length = 0;
         server.tv.artMode = true;
         server.tv.art.set('MY_F0002', { contentId: 'MY_F0002', categoryId: 'MY-C0002', raw: {} });
         albumId = (await albums.create(server.tvId, 'Halloween')).id;
@@ -78,6 +79,19 @@ describe('RotationService', () => {
 
         expect(selects()).toEqual([['MY-F0001', { show: false, category: 'MY-C0002' }]]);
         expect(server.tv.artMode).toBe(false);
+    });
+
+    it('selects a piece listed under MY-C0008 as well from My Photos, the only category the TV selects it from', async () => {
+        // As a 2025 Frame lists an upload: MY-C0008 first, then My Photos.
+        server.tv.art.set('MY_F0003', { contentId: 'MY_F0003', categoryId: 'MY-C0008', raw: {} });
+        server.tv.extraListEntries.push({ contentId: 'MY_F0003', categoryId: 'MY-C0002', raw: {} });
+        await albums.addPieces(server.tvId, albumId, ['MY-F0003']);
+        await rotations.set(server.tvId, { albumId });
+
+        expect(await service.advance(server.tvId)).toBe('MY_F0003');
+
+        expect(selects()).toEqual([['MY_F0003', { show: true, category: 'MY-C0002' }]]);
+        server.tv.art.delete('MY_F0003');
     });
 
     it('shuffles without showing the same piece twice running', async () => {

@@ -7,6 +7,9 @@ import type { ThumbnailBatcher } from './thumbnail.batcher.js';
 import { toHttpError } from './frame.http.errors.js';
 
 /** The artwork on screen. `contentId` is absent when the TV did not say. */
+/** My Photos: where the TV files uploads. */
+export const MY_PHOTOS = 'MY-C0002';
+
 /** A piece of art, once, with every category the TV lists it in. */
 export interface ListedArt extends ArtItem {
     /** In the order the TV listed them; `categoryId` is the first. */
