@@ -34,8 +34,7 @@ export class RotationService {
     ) {}
 
     /**
-     * Shows the TV the next piece of its album that is still on it, without switching it into art
-     * mode, and resolves with that piece's id as the TV spells it. 404 when the TV isn't rotating,
+     * Shows the TV the next piece of its album that is still on it, and resolves with that piece's id as the TV spells it. 404 when the TV isn't rotating,
      * 409 when none of the album's pieces is on the TV; the TV's own failures pass through.
      */
     async advance(tvId: string): Promise<string> {
@@ -52,7 +51,10 @@ export class RotationService {
         if (next === undefined || !item) {
             throw httpError(409).withDetails({ reason: `nothing in ${rotation.albumName} is on the TV` });
         }
-        await frame.select(item.contentId, { show: false, category: item.categoryId });
+        // A TV only repaints for `show`, which also switches it into art mode: so show the piece when art
+        // mode is already on, and otherwise only select it, ready for when art mode comes back.
+        const show = await frame.getArtMode();
+        await frame.select(item.contentId, { show, category: item.categoryId });
         await this.rotations.recordRotation(tvId, next);
         return item.contentId;
     }
