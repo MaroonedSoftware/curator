@@ -59,17 +59,17 @@ describe('rotation', () => {
         await user.click(within(dialog).getByRole('combobox', { name: 'Album' }));
         await user.click(await within(dialog).findByRole('option', { name: 'Halloween' }));
         await user.click(within(dialog).getByRole('combobox', { name: 'Change every' }));
-        await user.click(await within(dialog).findByRole('option', { name: '1 hour' }));
+        await user.click(await within(dialog).findByRole('option', { name: '1 minute' }));
         await user.click(within(dialog).getByRole('switch', { name: /shuffle/i }));
         await user.click(within(dialog).getByRole('button', { name: 'Rotate' }));
 
         const card = await screen.findByTestId('rotation');
-        await waitFor(() => expect(card).toHaveTextContent('Rotating through Halloween, in order, every 1 hour.'));
+        await waitFor(() => expect(card).toHaveTextContent('Rotating through Halloween, in order, every 1 minute.'));
         expect(writes(requests)).toEqual([
             expect.objectContaining({
                 method: 'PUT',
                 path: `${TV_BASE}/rotation`,
-                body: { albumId: HALLOWEEN, intervalMinutes: 60, shuffle: false },
+                body: { albumId: HALLOWEEN, intervalMinutes: 1, shuffle: false },
             }),
         ]);
     });
