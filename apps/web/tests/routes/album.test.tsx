@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { errorResponse, fakeApi, jsonResponse, noContent, TV_BASE, withTv } from '../fake.api';
+import { fireEvent } from '@testing-library/react';
 import { renderApp, screen, setupUser, waitFor, within } from '../test.render';
 
 type Item = { contentId: string; categoryId: string; categoryIds: string[]; raw: Record<string, unknown> };
@@ -83,6 +84,11 @@ function fakeTv() {
             return jsonResponse({ contentId: `MY-F00${uploads.next++}`, duplicate: false }, 201);
         },
         [`GET ${TV_BASE}/art/current`]: () => jsonResponse({ contentId: state.current, raw: {} }),
+        // The new image stands in for MY_F0001 as MY-F0020, in every album.
+        [`POST ${TV_BASE}/art/MY_F0001/replace`]: () => {
+            for (const album of state.albums) album.contentIds = album.contentIds.map(id => (id === 'MY-F0001' ? 'MY-F0020' : id));
+            return jsonResponse({ contentId: 'MY-F0020', duplicate: false });
+        },
         [`GET ${TV_BASE}/art-mode`]: () => jsonResponse({ on: true }),
         [`PUT ${TV_BASE}/art/current`]: request => {
             state.current = (request.body as { contentId: string }).contentId;
@@ -101,6 +107,13 @@ function fakeTv() {
 }
 
 const image = (name: string, type = 'image/jpeg') => new File([name], name, { type });
+
+/** Drops files on an element as a browser does when they are dragged from the desktop. */
+const dropFiles = (element: Element, files: File[]) => {
+    const dataTransfer = { files, types: ['Files'] };
+    fireEvent.dragOver(element, { dataTransfer });
+    fireEvent.drop(element, { dataTransfer });
+};
 
 /** The album page's dropzone input. Throws until the page has rendered it, so `waitFor` retries. */
 const dropzoneInput = () => {
@@ -153,6 +166,52 @@ describe('album', () => {
 
         expect(await screen.findByText('2 images added to Christmas. 1 was already on the TV, so it wasn’t uploaded again.')).toBeInTheDocument();
         expect(state.albums[1]!.contentIds).toEqual(['MY-F0001', 'MY-F0010']);
+    });
+
+    it('replaces a piece’s image from its menu', async () => {
+        const { requests, state } = fakeTv();
+        const user = setupUser();
+
+        renderApp(`${TV_BASE}/albums/${HALLOWEEN}`);
+        await user.click(await screen.findByRole('button', { name: 'Actions for MY-F0001' }));
+        await user.click(await screen.findByRole('menuitem', { name: 'Replace image…' }));
+        const dialog = await screen.findByRole('dialog', { name: 'Replace MY_F0001' });
+        await user.upload(dialog.querySelector<HTMLInputElement>('input[type="file"]')!, image('better.jpg'));
+        await user.click(within(dialog).getByRole('button', { name: 'Replace' }));
+
+        await waitFor(() =>
+            expect(screen.getAllByTestId('album-piece').map(card => within(card).getByText(/^MY-F/).textContent)).toEqual(['MY-F0020', 'MY-F0009']),
+        );
+        expect(state.albums[0]!.contentIds).toEqual(['MY-F0020', 'MY-F0009']);
+        expect(writes(requests)).toEqual([expect.objectContaining({ method: 'POST', path: `${TV_BASE}/art/MY_F0001/replace` })]);
+    });
+
+    it('replaces a piece’s image with a file dropped onto its card, once confirmed', async () => {
+        const { requests } = fakeTv();
+        const user = setupUser();
+
+        renderApp(`${TV_BASE}/albums/${HALLOWEEN}`);
+        await screen.findByText('Not on the TV');
+        dropFiles(screen.getAllByTestId('album-piece')[0]!, [image('better.jpg')]);
+        const dialog = await screen.findByRole('dialog', { name: 'Replace MY_F0001' });
+        expect(within(dialog).getByText('better.jpg')).toBeInTheDocument();
+        expect(writes(requests)).toEqual([]);
+        await user.click(within(dialog).getByRole('button', { name: 'Replace' }));
+
+        await waitFor(() => expect(writes(requests)).toEqual([expect.objectContaining({ path: `${TV_BASE}/art/MY_F0001/replace` })]));
+    });
+
+    it('adds files dropped elsewhere on the page, including on a piece gone from the TV, to the album', async () => {
+        const { state } = fakeTv();
+
+        renderApp(`${TV_BASE}/albums/${HALLOWEEN}`);
+        await screen.findByText('Not on the TV');
+        dropFiles(screen.getAllByTestId('album-piece')[1]!, [image('one.jpg'), image('notes.txt', 'text/plain')]);
+
+        expect(await screen.findByText('1 image uploaded to the TV and added to Halloween.')).toBeInTheDocument();
+        expect(screen.getByText('notes.txt isn’t a JPEG or PNG.')).toBeInTheDocument();
+        expect(state.albums[0]!.contentIds).toEqual(['MY-F0001', 'MY-F0009', 'MY-F0010']);
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it('turns away a file that isn’t a JPEG or PNG, uploading nothing', async () => {
