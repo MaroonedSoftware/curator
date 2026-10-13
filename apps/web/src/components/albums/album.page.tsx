@@ -11,6 +11,7 @@ import { artListOptions, currentArtOptions } from '../../api/tv.queries';
 import { useTv } from '../../tvs/tv.context';
 import { ArtThumbnail } from '../library/art.thumbnail';
 import { ErrorAlert } from '../shared/error.alert';
+import { AlbumDropzone } from './album.dropzone';
 import { AlbumNameModal } from './album.name.modal';
 import { DeleteAlbumModal } from './delete.album.modal';
 import { RotationModal } from './rotation.modal';
@@ -62,10 +63,12 @@ export function AlbumPage({ albumId }: { albumId: string }) {
                         </Group>
                     </Group>
 
+                    <AlbumDropzone albumId={albumId} albumName={album.data.name} />
+
                     {art.isError && <ErrorAlert error={art.error} />}
                     {album.data.contentIds.length === 0 && (
                         <Text c="dimmed">
-                            Nothing in this album yet. Add pieces from the{' '}
+                            Nothing in this album yet. Drop images above, or add pieces from the{' '}
                             <Anchor component={Link} to={`/tvs/${tv.id}/library`}>
                                 library
                             </Anchor>{' '}

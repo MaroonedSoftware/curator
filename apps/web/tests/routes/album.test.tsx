@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fakeApi, jsonResponse, noContent, TV_BASE, withTv } from '../fake.api';
+import { errorResponse, fakeApi, jsonResponse, noContent, TV_BASE, withTv } from '../fake.api';
 import { renderApp, screen, setupUser, waitFor, within } from '../test.render';
 
 type Item = { contentId: string; categoryId: string; categoryIds: string[]; raw: Record<string, unknown> };
@@ -66,9 +66,17 @@ function fakeTv() {
             ];
         }),
     );
+    const uploads = { next: 10, failing: new Set<string>() };
     const requests = fakeApi({
         ...withTv(),
         [`GET ${TV_BASE}/art`]: () => jsonResponse({ items: [piece('MY_F0001'), piece('MY-F0002')] }),
+        // A body named in `uploads.failing` (by its text) is refused, as a TV that times out would be.
+        [`POST ${TV_BASE}/art`]: async request => {
+            if (uploads.failing.has(await (request.body as Blob).text())) {
+                return errorResponse(504, 'Gateway Timeout', { reason: 'the TV did not acknowledge the upload' });
+            }
+            return jsonResponse({ contentId: `MY-F00${uploads.next++}` }, 201);
+        },
         [`GET ${TV_BASE}/art/current`]: () => jsonResponse({ contentId: state.current, raw: {} }),
         [`GET ${TV_BASE}/art-mode`]: () => jsonResponse({ on: true }),
         [`PUT ${TV_BASE}/art/current`]: request => {
@@ -84,10 +92,51 @@ function fakeTv() {
         },
         ...albumRoutes,
     });
-    return { state, requests };
+    return { state, requests, uploads };
 }
 
+const image = (name: string, type = 'image/jpeg') => new File([name], name, { type });
+
+/** The album page's dropzone input. Throws until the page has rendered it, so `waitFor` retries. */
+const dropzoneInput = () => {
+    const input = screen.getByTestId('album-dropzone').querySelector<HTMLInputElement>('input[type="file"]');
+    if (!input) throw new Error('no file input yet');
+    return input;
+};
+
 describe('album', () => {
+    it('uploads dropped images into the album, one at a time, carrying on past one the TV refuses', async () => {
+        const { requests, state, uploads } = fakeTv();
+        uploads.failing.add('two.jpg');
+        const user = setupUser();
+
+        renderApp(`${TV_BASE}/albums/${CHRISTMAS}`);
+        await user.upload(await waitFor(dropzoneInput), [image('one.jpg'), image('two.jpg'), image('three.png', 'image/png')]);
+
+        expect(await screen.findByText('two.jpg wasn’t added')).toBeInTheDocument();
+        expect(await screen.findByText('2 images uploaded to the TV and added to Christmas.')).toBeInTheDocument();
+        expect(state.albums[1]!.contentIds).toEqual(['MY-F0010', 'MY-F0011']);
+        expect(writes(requests).map(request => `${request.method} ${request.path}`)).toEqual([
+            `POST ${TV_BASE}/art`,
+            `PUT ${TV_BASE}/albums/${CHRISTMAS}/pieces`,
+            `POST ${TV_BASE}/art`,
+            `POST ${TV_BASE}/art`,
+            `PUT ${TV_BASE}/albums/${CHRISTMAS}/pieces`,
+        ]);
+        expect(writes(requests)[0]!.headers.get('content-type')).toBe('image/jpeg');
+    });
+
+    it('turns away a file that isn’t a JPEG or PNG, uploading nothing', async () => {
+        const { requests } = fakeTv();
+        const user = setupUser({ applyAccept: false });
+
+        renderApp(`${TV_BASE}/albums/${CHRISTMAS}`);
+        await user.upload(await waitFor(dropzoneInput), image('notes.txt', 'text/plain'));
+
+        expect(await screen.findByText('notes.txt isn’t a JPEG or PNG.')).toBeInTheDocument();
+        expect(writes(requests)).toEqual([]);
+    });
+
     it('shows the album’s pieces in order, matching either spelling of an id, and marks one gone from the TV', async () => {
         fakeTv();
 
