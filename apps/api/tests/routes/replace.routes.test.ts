@@ -53,12 +53,23 @@ describe('replacing a piece’s image', () => {
         expect(await albums.pieces(server.tvId, halloween)).toEqual(['SAM-S0001', 'MY-F0003', 'MY-F0099']);
         expect(await albums.pieces(server.tvId, favourites)).toEqual(['MY-F0003']);
         expect((await rotations.get(server.tvId))?.lastContentId).toBe('MY-F0003');
-        expect(server.tv.calls.filter(call => call.method !== 'list' && call.method !== 'current')).toEqual([
+        expect(server.tv.calls.filter(call => !['list', 'current', 'getArtMode'].includes(call.method))).toEqual([
             { method: 'upload', args: [image, { fileType: 'jpg', matte: 'shadowbox_polar', portraitMatte: 'flexible_apricot' }] },
-            { method: 'select', args: ['MY-F0003', { show: false, category: 'MY-C0002' }] },
+            { method: 'select', args: ['MY-F0003', { show: true, category: 'MY-C0002' }] },
             { method: 'delete', args: ['MY_F0001'] },
         ]);
         expect(server.tv.art.has('MY_F0001')).toBe(false);
+    });
+
+    it('only selects the new piece, without switching into art mode, when the TV is showing television', async () => {
+        server.tv.artMode = false;
+        try {
+            await replace('MY-F0001', uniqueJpeg());
+        } finally {
+            server.tv.artMode = true;
+        }
+
+        expect(server.tv.calls.find(call => call.method === 'select')?.args).toEqual(['MY-F0003', { show: false, category: 'MY-C0002' }]);
     });
 
     it('leaves the screen alone when the old piece wasn’t on it', async () => {
