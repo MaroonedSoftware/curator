@@ -51,6 +51,29 @@ const ApiConfigSchema = z.object({
             identifyTimeoutMs: z.coerce.number().int().min(500).max(15_000).default(3000),
         })
         .prefault({}),
+    log: z
+        .object({
+            /** Where `api.log` and its rotated segments are kept. Relative to apps/api. */
+            dir: z.string().min(1).default('.data/logs'),
+            /** Rotate the log once it reaches this many bytes. */
+            maxBytes: z.coerce
+                .number()
+                .int()
+                .min(1024)
+                .default(2 * 1024 * 1024),
+            /** Rotated files kept besides the active one, so the log never takes more than (maxFiles + 1) × maxBytes. */
+            maxFiles: z.coerce.number().int().min(1).max(100).default(3),
+            /** Longest one logged value may be, in characters, before it is cut short. */
+            maxValueChars: z.coerce.number().int().min(16).default(512),
+            /** Longest one line may be, in bytes, before it is cut short. */
+            maxLineBytes: z.coerce
+                .number()
+                .int()
+                .min(256)
+                .max(65_536)
+                .default(8 * 1024),
+        })
+        .prefault({}),
 });
 
 export type ApiConfig = z.infer<typeof ApiConfigSchema>;

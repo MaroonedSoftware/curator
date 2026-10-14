@@ -24,3 +24,9 @@ database:
 # rotation:
 #     tickSeconds: 25     # how often to look for a TV whose next piece is due
 #     retrySeconds: 300   # how long to leave a TV that failed to advance (off, say)
+
+# The API's log is written to stdout and to a rotating file the web app's Logs page reads.
+# log:
+#     dir: .data/logs       # relative to apps/api
+#     maxBytes: 2097152     # rotate at 2 MiB
+#     maxFiles: 3           # rotated files kept besides the active one
