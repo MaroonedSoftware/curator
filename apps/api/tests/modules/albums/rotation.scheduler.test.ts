@@ -1,3 +1,5 @@
+import { httpError } from '@maroonedsoftware/errors';
+import type { Logger } from '@maroonedsoftware/logger';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RotationRepository } from '../../../src/modules/albums/rotation.repository.js';
 import { RotationScheduler } from '../../../src/modules/albums/rotation.scheduler.js';
@@ -5,8 +7,19 @@ import type { RotationService } from '../../../src/modules/albums/rotation.servi
 import { currentTrace } from '../../../src/logging/trace.context.js';
 import { silentLogger } from '../../test.server.js';
 
+/** A logger that keeps every line, as `[level, message, ...args]`. */
+function recordingLogger() {
+    const lines: unknown[][] = [];
+    const record =
+        (level: string) =>
+        (message: unknown, ...args: unknown[]) =>
+            lines.push([level, message, ...args]);
+    const logger: Logger = { error: record('error'), warn: record('warn'), info: record('info'), debug: record('debug'), trace: record('trace') };
+    return { logger, lines };
+}
+
 /** A scheduler over fakes: `due` is what the repository reports, and `advance` is the service's. */
-function scheduler(due: string[], advance: (tvId: string) => Promise<string>) {
+function scheduler(due: string[], advance: (tvId: string) => Promise<string>, logger: Logger = silentLogger) {
     const clock = { now: 0 };
     const advanced: string[] = [];
     const rotations = { due: async () => due } as unknown as RotationRepository;
@@ -16,7 +29,7 @@ function scheduler(due: string[], advance: (tvId: string) => Promise<string>) {
             return advance(tvId);
         },
     } as unknown as RotationService;
-    return { scheduler: new RotationScheduler(rotations, service, silentLogger, 60_000, 300_000, () => clock.now), advanced, clock };
+    return { scheduler: new RotationScheduler(rotations, service, logger, 60_000, 300_000, () => clock.now), advanced, clock };
 }
 
 describe('RotationScheduler', () => {
@@ -95,5 +108,69 @@ describe('RotationScheduler', () => {
         await s.stop();
         await vi.advanceTimersByTimeAsync(120_000);
         expect(advanced).toEqual(['a', 'a']);
+    });
+
+    it('warns once, in one line, when a TV becomes unreachable, and says when it is back', async () => {
+        const { logger, lines } = recordingLogger();
+        let reachable = false;
+        const unreachable = httpError(503).withDetails({ reason: 'cannot reach TV at 192.168.1.56:8002' });
+        const { scheduler: s, clock } = scheduler(
+            ['a'],
+            async () => {
+                if (!reachable) throw unreachable;
+                return 'MY-F0001';
+            },
+            logger,
+        );
+
+        await s.tick();
+        clock.now = 300_000;
+        await s.tick();
+        reachable = true;
+        clock.now = 600_000;
+        await s.tick();
+        await s.tick();
+
+        expect(lines).toEqual([
+            [
+                'warn',
+                'rotation: could not advance; retrying later',
+                { tvId: 'a', reason: 'cannot reach TV at 192.168.1.56:8002', retryInSeconds: 300 },
+            ],
+            [
+                'debug',
+                'rotation: still could not advance; retrying later',
+                { tvId: 'a', reason: 'cannot reach TV at 192.168.1.56:8002', retryInSeconds: 300 },
+            ],
+            ['info', 'rotation: the TV is back and advanced', { tvId: 'a', contentId: 'MY-F0001' }],
+            ['info', 'rotation: advanced', { tvId: 'a', contentId: 'MY-F0001' }],
+        ]);
+    });
+
+    it('logs an unexpected error with its stack', async () => {
+        const { logger, lines } = recordingLogger();
+        const bug = new TypeError('undefined is not a function');
+        const { scheduler: s } = scheduler(
+            ['a'],
+            async () => {
+                throw bug;
+            },
+            logger,
+        );
+
+        await s.tick();
+
+        expect(lines).toEqual([
+            [
+                'warn',
+                'rotation: could not advance; retrying later',
+                {
+                    tvId: 'a',
+                    error: 'undefined is not a function',
+                    retryInSeconds: 300,
+                    stack: expect.stringContaining('rotation.scheduler.test.ts'),
+                },
+            ],
+        ]);
     });
 });
