@@ -102,8 +102,9 @@ USER node
 EXPOSE 14100
 VOLUME ["/data"]
 
-# Liveness only: /health never touches the database or a TV.
+# Liveness only: /health never touches the database or a TV. A blank PORT falls back to 14100, as
+# the server's own config does.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD node -e "fetch('http://127.0.0.1:'+process.env.PORT+'/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+    CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||14100)+'/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
 
 ENTRYPOINT ["curator-entrypoint"]
