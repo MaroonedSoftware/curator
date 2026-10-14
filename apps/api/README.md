@@ -8,6 +8,7 @@ HTTP API over [`@curator/frame`](../../packages/frame/README.md), built on
 ```
 src/
   index.ts               entry point: load config, start the server
+  migrate.ts             compiled entry point that applies data/migrations with dbmate (the Docker image)
   server/                config loading and validation, the plugin stack, buildServer/startServer
   logging/               the rotating log file, the logger that tees to it, and request/rotation traces
   modules/               ServerKit modules (DI registrations and lifecycle hooks), in setup order
