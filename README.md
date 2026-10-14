@@ -76,11 +76,12 @@ volumes:
 
 The web app is then on port 14100, with the API under `/api`. `DATABASE_PORT` (default 5432) and
 `PORT` (default 14100) are also read. Uploaded originals and the log live on the `/data` volume.
+The config is `apps/api/appconfig.production.yaml`. The migrations wait up to a minute for Postgres to
+accept connections, so the container can start before the database.
 
-At start the container waits up to two minutes for the database, applies any new migrations, then
-serves. It runs as `PUID:PGID` (default 1000:1000): it starts as root only to make `/data` theirs when
-it is not already (a bind-mounted folder Docker created is root's), then drops to them.
-The config is `apps/api/appconfig.production.yaml`.
+The server runs as `PUID`:`PGID` (default 1000:1000), and the container hands `/data` to that user
+when it starts. Bind-mounting a host directory owned by someone else, set them to its owner: on
+Unraid, whose appdata belongs to nobody:users, that is `PUID=99` and `PGID=100`.
 
 Every connection to a TV is outbound, so bridge networking works, but SSDP discovery (the TVs page's
 Search) needs multicast on the TVs' network: run with `network_mode: host` (and no `ports`) to use it,

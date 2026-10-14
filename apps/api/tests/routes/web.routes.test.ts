@@ -9,11 +9,13 @@ const SCRIPT = 'console.log("curator");';
 
 describe('web app', () => {
     let server: Awaited<ReturnType<typeof createTestServer>>;
-    let dir: string;
+    let root: string;
 
     beforeAll(async () => {
-        dir = await mkdtemp(join(tmpdir(), 'curator-web-'));
-        await mkdir(join(dir, 'assets'));
+        root = await mkdtemp(join(tmpdir(), 'curator-web-'));
+        // Under a folder named `assets`, so only the path inside the build may decide what is immutable.
+        const dir = join(root, 'assets', 'dist');
+        await mkdir(join(dir, 'assets'), { recursive: true });
         await writeFile(join(dir, 'index.html'), INDEX);
         await writeFile(join(dir, 'assets', 'index-abc123.js'), SCRIPT);
         server = await createTestServer(import.meta.url, { server: { port: 0, routePrefix: '/api' }, web: { dir } });
@@ -21,7 +23,7 @@ describe('web app', () => {
 
     afterAll(async () => {
         await server.close();
-        await rm(dir, { recursive: true, force: true });
+        await rm(root, { recursive: true, force: true });
     });
 
     it('serves index.html at the root, never cached', async () => {

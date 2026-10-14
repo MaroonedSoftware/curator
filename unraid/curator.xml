@@ -18,7 +18,7 @@
         The web app and its API share one port. The database schema is applied at every start, so
         updating the container is all an upgrade takes.
 
-        It waits up to two minutes for the database at start, so it can boot alongside your Postgres
+        It waits up to a minute for the database at start, so it can boot alongside your Postgres
         container, and it takes ownership of its Data folder as nobody:users, Unraid's usual owner.
 
         First run: open the web app, go to TVs, and search for your Frame (or add it by its address).

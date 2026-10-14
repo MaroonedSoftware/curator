@@ -1,7 +1,8 @@
-import { AppConfigBuilder, AppConfigResolverEnv, type AppConfig } from '@maroonedsoftware/appconfig';
+import { AppConfigBuilder, type AppConfig } from '@maroonedsoftware/appconfig';
 import { AppConfigSourceYaml } from '@maroonedsoftware/appconfig/yaml';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { EnvTextResolver } from './env.text.resolver.js';
 
 /** apps/api, whether this runs from src/server or dist/server. */
 export const API_ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -15,7 +16,7 @@ const ENVIRONMENT_NAME = /^[a-z][a-z0-9]*$/;
  * - `appconfig.${NODE_ENV}.yaml`, committed. NODE_ENV defaults to `development`.
  * - `appconfig.local.yaml`, gitignored and optional, for per-machine overrides such as the TV's address.
  *
- * Any string value may be `${env:NAME}`, filled from the process environment.
+ * Any string value may be `${env:NAME}`, filled from the process environment as text (see EnvTextResolver).
  */
 export const loadConfig = async (): Promise<AppConfig> => {
     const environment = process.env.NODE_ENV ?? 'development';
@@ -29,6 +30,6 @@ export const loadConfig = async (): Promise<AppConfig> => {
     return await new AppConfigBuilder()
         .addSource(new AppConfigSourceYaml(environmentFile, { ignoreMissingFile: false }))
         .addSource(new AppConfigSourceYaml(`${API_ROOT}appconfig.local.yaml`))
-        .addResolver(new AppConfigResolverEnv())
+        .addResolver(new EnvTextResolver())
         .buildSnapshot();
 };
