@@ -9,6 +9,7 @@ import { setLogStore } from '../logging/log.store.js';
 import { RotatingLogStore } from '../logging/rotating.log.store.js';
 import { modules as defaultModules } from '../modules/modules.js';
 import { routes } from '../routes/routes.js';
+import { webRoutes } from '../routes/web.routes.js';
 import { parseApiConfig } from './api.config.js';
 import { installCrashHandlers } from './crash.handlers.js';
 import { API_ROOT } from './load.config.js';
@@ -29,7 +30,11 @@ export const buildServer = async (
     const builder = new ServerKitServerBuilder();
     const container = await builder.setup(config, logger, modules, parserMappings);
     const prefix = apiConfig.server.routePrefix;
-    builder.setupPlugins(container => setupPlugins(container, apiConfig)).setupRoutes(prefix ? routes.map(plugin => ({ plugin, prefix })) : routes);
+    const apiRoutes = prefix ? routes.map(plugin => ({ plugin, prefix })) : routes;
+    const webDir = apiConfig.web.dir;
+    builder
+        .setupPlugins(container => setupPlugins(container, apiConfig))
+        .setupRoutes(webDir === undefined ? apiRoutes : [...apiRoutes, webRoutes(resolve(API_ROOT, webDir), prefix)]);
     return { builder, container };
 };
 

@@ -8,6 +8,11 @@ server:
     # Path every route mounts under. Empty here: the web dev server's proxy strips /api.
     # routePrefix: /api
 
+# The web app's build, served from this origin (the Docker image does this). Unset in development,
+# where the web dev server on 14102 serves the app and proxies /api here.
+# web:
+#     dir: ../web/dist
+
 # Postgres from docker-compose.yml (`pnpm db:up` at the repo root).
 database:
     host: localhost

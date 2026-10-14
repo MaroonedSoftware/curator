@@ -19,6 +19,15 @@ const ApiConfigSchema = z.object({
             .regex(/^(\/[A-Za-z0-9._~-]+)*$/, 'must be empty, or start with / and not end with one')
             .default(''),
     }),
+    web: z
+        .object({
+            /**
+             * The web app's build (`apps/web/dist`), served from the same origin as the API. Unset
+             * serves nothing, which is right whenever the web dev server is in front. Relative to apps/api.
+             */
+            dir: z.string().min(1).optional(),
+        })
+        .prefault({}),
     database: z.object({
         host: z.string().min(1),
         port: port.default(5432),

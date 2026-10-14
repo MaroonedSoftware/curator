@@ -65,6 +65,11 @@ To run without a TV, start the fake one (`pnpm fake:tv` in `packages/frame`) and
 
 There is no authentication: the API is meant for the home network the TV sits on.
 
+The API can also serve the web app, so one process answers on one origin (this is how the Docker
+image runs). Set `web.dir` to the web build (`apps/web/dist`) and `server.routePrefix` to `/api`,
+where the web app looks for the API. Any GET outside `/api` that names no file answers
+`index.html`, for the web app's client-side routes.
+
 ## Logging
 
 `pnpm dev` and `pnpm start` log to stdout and to `.data/logs/api.log` (the `log` config section sets
