@@ -1,5 +1,6 @@
 import fastifyStatic from '@fastify/static';
 import type { FastifyPluginAsync } from 'fastify';
+import { relative, sep } from 'node:path';
 
 /** Vite names every file under `assets/` by its content hash, so a cached copy never goes stale. */
 const IMMUTABLE = 'public, max-age=31536000, immutable';
@@ -22,8 +23,10 @@ export const webRoutes =
             // own the wildcard. The build is fixed for the life of the process.
             wildcard: false,
             cacheControl: false,
+            // On the path inside `dir`, so a `dir` that itself sits under some `assets` folder doesn't
+            // mark index.html immutable too.
             setHeaders: (reply, path) => {
-                reply.header('cache-control', path.includes('/assets/') ? IMMUTABLE : 'no-cache');
+                reply.header('cache-control', relative(dir, path).split(sep)[0] === 'assets' ? IMMUTABLE : 'no-cache');
             },
         });
 
