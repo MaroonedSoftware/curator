@@ -75,7 +75,8 @@ volumes:
 
 The web app is then on port 14100, with the API under `/api`. `DATABASE_PORT` (default 5432) and
 `PORT` (default 14100) are also read. Uploaded originals and the log live on the `/data` volume.
-The config is `apps/api/appconfig.production.yaml`.
+The config is `apps/api/appconfig.production.yaml`. The migrations wait up to a minute for Postgres to
+accept connections, so the container can start before the database.
 
 Every connection to a TV is outbound, so bridge networking works, but SSDP discovery (the TVs page's
 Search) needs multicast on the TVs' network: run with `network_mode: host` (and no `ports`) to use it,
