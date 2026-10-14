@@ -48,6 +48,19 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            # Development and CI migrate with the npm dbmate, the image with the one copied out of
+            # dbmate's own image, and Dependabot bumps the two separately. A bump to one fails here
+            # until the other follows, so production never migrates with a different dbmate.
+            - name: Check dbmate matches between the image and the workspace
+              run: |
+                  installed="$(node -p "require('./apps/api/node_modules/dbmate/package.json').version")"
+                  image="$(sed -n 's#^FROM ghcr.io/amacneil/dbmate:\([^ ]*\).*#\1#p' Dockerfile)"
+                  echo "workspace=$installed image=$image"
+                  if [ "$installed" != "$image" ]; then
+                      echo "::error file=Dockerfile::The Dockerfile copies dbmate ${image:-(not found)}, but apps/api installs ${installed}. Bump whichever is behind."
+                      exit 1
+                  fi
+
             # From the root and with no `--ignore-path`: Prettier then reads both `.gitignore` and
             # `.prettierignore`, so it never walks `.turbo/cache`. A warning, not a gate.
             - name: Check formatting

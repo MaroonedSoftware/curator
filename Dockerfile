@@ -9,7 +9,7 @@
 
 # dbmate, copied out of its own image rather than installed from npm: in the workspace it is a dev
 # dependency, which the production install below leaves out. GHCR, so it never counts against a
-# Docker Hub pull limit. Keep the version in step with apps/api's devDependency.
+# Docker Hub pull limit. Keep the version in step with apps/api's devDependency (build.yml checks).
 FROM ghcr.io/amacneil/dbmate:2.36.0 AS dbmate
 
 # ─────────────────────────────────────────────────────────────────────────────────────────────
