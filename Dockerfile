@@ -70,7 +70,9 @@ FROM node:26-trixie-slim
 COPY --from=dbmate /usr/local/bin/dbmate /usr/local/bin/dbmate
 
 WORKDIR /app
-# The tree is root's and read-only to the server; only /data is the server's to write.
+# The tree is root's and read-only to the server; only /data is the server's to write. The
+# entrypoint starts as root only to hand /data to PUID:PGID (default 1000:1000, the image's `node`
+# user), then runs everything else as that user.
 COPY --from=workspace /deploy ./
 COPY docker/curator.entrypoint.sh /usr/local/bin/curator-entrypoint
 RUN mkdir -p /data && chown node:node /data
@@ -98,7 +100,6 @@ LABEL org.opencontainers.image.revision="${REVISION}" \
 ENV BUILD_REVISION=${REVISION} \
     BUILD_VERSION=${VERSION}
 
-USER node
 EXPOSE 14100
 VOLUME ["/data"]
 
