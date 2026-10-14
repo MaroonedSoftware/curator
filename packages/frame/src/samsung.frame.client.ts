@@ -625,7 +625,7 @@ function parseJsonField<T>(data: Record<string, unknown>, field: string): T {
     throw new FrameError(`reply missing ${field}`);
 }
 
-function safeParse(s: string): Record<string, any> | undefined {
+function safeParse(s: string): Record<string, unknown> | undefined {
     try {
         return JSON.parse(s);
     } catch {

@@ -16,6 +16,7 @@
         "build:ci": "eslint --max-warnings=0 && pnpm run build",
         "typecheck": "tsc -p tsconfig.tests.json --noEmit",
         "lint": "eslint --fix",
+        "lint:check": "eslint --max-warnings=0",
         "format": "prettier --write . --ignore-path ../../.prettierignore",
         "test": "vitest run",
         "probe": "node --no-warnings --import @swc-node/register/esm-register scripts/frame.probe.ts",
