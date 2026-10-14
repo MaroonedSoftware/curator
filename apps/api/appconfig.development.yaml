@@ -5,6 +5,8 @@ server:
     port: 14100
     # Browser origins allowed by CORS, comma-separated.
     corsOrigins: http://localhost:14102
+    # Path every route mounts under. Empty here: the web dev server's proxy strips /api.
+    # routePrefix: /api
 
 # Postgres from docker-compose.yml (`pnpm db:up` at the repo root).
 database:

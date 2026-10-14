@@ -28,7 +28,8 @@ export const buildServer = async (
     const apiConfig = parseApiConfig(config);
     const builder = new ServerKitServerBuilder();
     const container = await builder.setup(config, logger, modules, parserMappings);
-    builder.setupPlugins(container => setupPlugins(container, apiConfig)).setupRoutes(routes);
+    const prefix = apiConfig.server.routePrefix;
+    builder.setupPlugins(container => setupPlugins(container, apiConfig)).setupRoutes(prefix ? routes.map(plugin => ({ plugin, prefix })) : routes);
     return { builder, container };
 };
 

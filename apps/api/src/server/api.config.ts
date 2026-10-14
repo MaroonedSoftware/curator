@@ -9,6 +9,15 @@ const ApiConfigSchema = z.object({
         port: port.default(14100),
         /** Comma-separated browser origins allowed by CORS. Empty allows none. */
         corsOrigins: z.string().default(''),
+        /**
+         * Path every API route is mounted under, such as `/api` when the API also serves the web app
+         * from the same origin. Empty mounts them at the root, which is what the web dev server's
+         * proxy expects: it strips `/api` before forwarding.
+         */
+        routePrefix: z
+            .string()
+            .regex(/^(\/[A-Za-z0-9._~-]+)*$/, 'must be empty, or start with / and not end with one')
+            .default(''),
     }),
     database: z.object({
         host: z.string().min(1),
