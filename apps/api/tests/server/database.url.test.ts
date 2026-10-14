@@ -16,4 +16,11 @@ describe('databaseUrl', () => {
         expect(url.port).toBe('6543');
         expect(decodeURIComponent(url.password)).toBe('p@ss/word#1');
     });
+
+    it('reads an unset port as the default and a numeric password as text, as ${env:…} substitution leaves them', () => {
+        const url = new URL(databaseUrl(config({ port: '', password: 1234 })));
+
+        expect(url.port).toBe('5432');
+        expect(url.password).toBe('1234');
+    });
 });

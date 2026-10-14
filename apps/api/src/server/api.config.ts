@@ -2,11 +2,19 @@ import type { AppConfig } from '@maroonedsoftware/appconfig';
 import { z } from 'zod';
 
 /** `${env:NAME}` substitutions arrive as strings, so numbers and booleans accept either form. */
-const port = z.coerce.number().int().min(0).max(65535);
+const port = (fallback: number) =>
+    z.preprocess(
+        // An unset variable substitutes as '', which would coerce to port 0: take it as "not set" instead.
+        value => (value === '' || value === undefined ? fallback : value),
+        z.coerce.number().int().min(0).max(65535),
+    );
+
+/** The resolver JSON-parses what it substitutes, so a password of `1234` arrives as a number. */
+const text = z.coerce.string();
 
 const ApiConfigSchema = z.object({
     server: z.object({
-        port: port.default(14100),
+        port: port(14100),
         /** Comma-separated browser origins allowed by CORS. Empty allows none. */
         corsOrigins: z.string().default(''),
         /**
@@ -30,10 +38,10 @@ const ApiConfigSchema = z.object({
         .prefault({}),
     database: z.object({
         host: z.string().min(1),
-        port: port.default(5432),
-        user: z.string().min(1),
-        password: z.string(),
-        name: z.string().min(1),
+        port: port(5432),
+        user: text.pipe(z.string().min(1)),
+        password: text,
+        name: text.pipe(z.string().min(1)),
         pool: z
             .object({
                 max: z.coerce.number().int().positive().default(5),

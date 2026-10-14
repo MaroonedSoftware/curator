@@ -3,6 +3,8 @@
     "agentGuidance": false,
     "globalEnv": [
         "NODE_ENV",
+        "BUILD_VERSION",
+        "BUILD_REVISION",
         "DATABASE_URL",
         "TEST_DATABASE_HOST",
         "TEST_DATABASE_PORT",
