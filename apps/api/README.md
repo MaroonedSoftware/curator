@@ -85,13 +85,14 @@ the directory and the rotation limits). The file rotates by size, so it never ho
 
 ## Routes
 
-| Method | Path         | Body / answers                                                        |
-| ------ | ------------ | --------------------------------------------------------------------- |
-| GET    | `/health`    | `{ status: 'ok', uptimeMs }`. Never touches a TV.                     |
-| GET    | `/tvs`       | `{ items: [Tv] }`, oldest first                                       |
-| GET    | `/tvs/:tvId` | `Tv`: `{ id, name, host, port, model, paired, createdAt, updatedAt }` |
-| PATCH  | `/tvs/:tvId` | `{ name }` renames it. Answers the `Tv`                               |
-| DELETE | `/tvs/:tvId` | Forgets the TV and closes its connection. 204                         |
+| Method | Path         | Body / answers                                                                                                                            |
+| ------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/health`    | `{ status: 'ok', uptimeMs }`. Never touches a TV.                                                                                         |
+| GET    | `/logs`      | `{ items: [{ ts, level, text }] }`, the API's log, newest first. `?limit=` (default 200, max 1000), `?level=` the least severe to include |
+| GET    | `/tvs`       | `{ items: [Tv] }`, oldest first                                                                                                           |
+| GET    | `/tvs/:tvId` | `Tv`: `{ id, name, host, port, model, paired, createdAt, updatedAt }`                                                                     |
+| PATCH  | `/tvs/:tvId` | `{ name }` renames it. Answers the `Tv`                                                                                                   |
+| DELETE | `/tvs/:tvId` | Forgets the TV and closes its connection. 204                                                                                             |
 
 `POST /tvs` checks the address is a Frame, then pairs with it: the TV shows a prompt that someone
 must accept with the remote, so the request can take up to 30 seconds. The TV is stored only once
