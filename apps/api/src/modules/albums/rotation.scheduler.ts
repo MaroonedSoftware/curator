@@ -1,5 +1,6 @@
 import type { Logger } from '@maroonedsoftware/logger';
 import { randomUUID } from 'node:crypto';
+import { errorText } from '../../logging/error.text.js';
 import { runInTrace } from '../../logging/trace.context.js';
 import type { RotationRepository } from './rotation.repository.js';
 import type { RotationService } from './rotation.service.js';
@@ -26,6 +27,7 @@ export class RotationScheduler {
 
     start(): void {
         this.stop();
+        this.logger.info('rotation: started', { tickMs: this.tickMs, retryMs: this.retryMs });
         this.timer = setInterval(() => void this.tick(), this.tickMs);
         // A server with nothing else to do may still exit.
         this.timer.unref();
@@ -34,6 +36,7 @@ export class RotationScheduler {
 
     /** Stops ticking, and waits for any advance in flight. */
     async stop(): Promise<void> {
+        if (this.timer !== undefined) this.logger.info('rotation: stopped');
         clearInterval(this.timer);
         this.timer = undefined;
         await Promise.allSettled(this.running.values());
@@ -45,7 +48,7 @@ export class RotationScheduler {
         try {
             due = await this.rotations.due();
         } catch (error) {
-            this.logger.error('rotation: could not read the due rotations', error);
+            this.logger.error('rotation: could not read the due rotations', { error: errorText(error) });
             return;
         }
         const now = this.now();
@@ -60,11 +63,11 @@ export class RotationScheduler {
                 .advance(tvId)
                 .then(contentId => {
                     this.retryAt.delete(tvId);
-                    this.logger.info(`rotation: TV ${tvId} now shows ${contentId}`);
+                    this.logger.info('rotation: advanced', { tvId, contentId });
                 })
                 .catch((error: unknown) => {
                     this.retryAt.set(tvId, this.now() + this.retryMs);
-                    this.logger.warn(`rotation: could not advance TV ${tvId}`, error);
+                    this.logger.warn('rotation: could not advance; retrying later', { tvId, retryMs: this.retryMs, error: errorText(error) });
                 })
                 .finally(() => this.running.delete(tvId)),
         );

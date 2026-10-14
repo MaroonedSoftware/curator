@@ -9,6 +9,7 @@ import type { TvRow } from '../tvs/tv.repository.js';
 import type { TvService } from '../tvs/tv.service.js';
 import type { BackupManifest, BackupPiece, BackupTv } from './backup.manifest.js';
 import { zipStream, type ZipEntry } from './zip.stream.js';
+import { errorText } from '../../logging/error.text.js';
 
 const text = (value: unknown) => (typeof value === 'string' && value.length > 0 ? value : undefined);
 
@@ -99,7 +100,7 @@ export class BackupService {
         try {
             return await (await this.tvs.frameFor(tv.id)).list();
         } catch (error) {
-            this.logger.warn(`backing up ${tv.name} without its art list: the TV could not be reached`, error);
+            this.logger.warn('backup: the TV could not be reached; backing up without its art list', { tvId: tv.id, error: errorText(error) });
             return undefined;
         }
     }
@@ -114,7 +115,11 @@ export class BackupService {
             for (const piece of tv.pieces) {
                 if (!piece.file) continue;
                 const original = await store.get(piece.contentId).catch((error: unknown) => {
-                    this.logger.warn(`could not read the original of ${piece.contentId} for the backup`, error);
+                    this.logger.warn('backup: could not read an original; leaving its image out', {
+                        tvId: tv.id,
+                        contentId: piece.contentId,
+                        error: errorText(error),
+                    });
                     return undefined;
                 });
                 if (!original) {

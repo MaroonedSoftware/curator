@@ -4,6 +4,7 @@ import { Logger } from '@maroonedsoftware/logger';
 import { Kysely, type LogEvent } from 'kysely';
 import { parseApiConfig } from '../../server/api.config.js';
 import type { DB } from './db.js';
+import { errorText } from '../../logging/error.text.js';
 
 /**
  * Postgres, through Kysely. The pool connects lazily, so the API boots before the database is up
@@ -27,13 +28,13 @@ export const DataModule: ServerKitModule = {
                     connectionTimeoutMillis: database.pool.connectionTimeoutMs,
                     types: KyselyPgTypeOverrides,
                 });
-                pool.on('error', error => logger.error(error));
+                pool.on('error', error => logger.error('db: an idle connection failed', { error: errorText(error) }));
                 return new Kysely<DB>({
                     dialect: new EmptyUpdateRewriteDialect({ pool }, logger),
                     plugins: KyselyDefaultPlugins,
                     log: (event: LogEvent) => {
                         if (event.level === 'error') {
-                            logger.error(event.error);
+                            logger.error('db: a query failed', { error: errorText(event.error), sql: event.query.sql });
                         }
                     },
                 });

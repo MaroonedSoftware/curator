@@ -5,6 +5,7 @@ import type { Logger } from '@maroonedsoftware/logger';
 import { FrameService } from '../frame/frame.service.js';
 import type { FrameClientFactory, FrameClientRegistry } from '../frame/frame.client.registry.js';
 import type { OriginalStore } from '../frame/original.store.js';
+import { errorText } from '../../logging/error.text.js';
 import type { TvRepository, TvRow } from './tv.repository.js';
 
 export interface ConnectTv {
@@ -43,6 +44,7 @@ export class TvService {
         const tokens = new MemoryTokenStore();
         // A client of its own, with the token kept in memory: there is no row to keep it in until pairing succeeds.
         const client = this.createClient({ id, host, port }, tokens);
+        this.logger.info('tvs: pairing; accept the prompt on the TV', { host, port });
         try {
             const frame = new FrameService(client);
             const device = await frame.deviceInfo();
@@ -52,7 +54,7 @@ export class TvService {
             // The first art request opens the channel, which is what asks the TV to trust us.
             await frame.apiVersion();
 
-            return await this.tvs.create({
+            const tv = await this.tvs.create({
                 id,
                 name: name ?? device.name ?? device.model ?? 'Frame TV',
                 host,
@@ -60,7 +62,10 @@ export class TvService {
                 model: device.model,
                 token: await tokens.load(),
             });
+            this.logger.info('tvs: added', { tvId: tv.id, name: tv.name, host, port, model: tv.model });
+            return tv;
         } catch (error) {
+            this.logger.warn('tvs: could not add a TV', { host, port, error: errorText(error) });
             if (isUniqueViolation(error)) {
                 throw httpError(409).withDetails({ reason: `a TV is already added at ${host}:${port}` });
             }

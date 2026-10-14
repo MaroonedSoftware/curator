@@ -1,5 +1,7 @@
 import type { FrameClient, TokenStore } from '@curator/frame';
+import type { Logger } from '@maroonedsoftware/logger';
 import type { Identifier } from 'injectkit';
+import { errorText } from '../../logging/error.text.js';
 import { ThumbnailBatcher, type ThumbnailBatcherOptions } from './thumbnail.batcher.js';
 import type { ThumbnailCache } from './thumbnail.cache.js';
 
@@ -24,6 +26,7 @@ export class FrameClientRegistry {
 
     constructor(
         private readonly factory: FrameClientFactory,
+        private readonly logger: Logger,
         private readonly tokenStoreFor: (tvId: string) => TokenStore,
         private readonly thumbnailCache: ThumbnailCache,
         private readonly thumbnailOptions: ThumbnailBatcherOptions = { windowMs: 25, maxBatch: 24 },
@@ -44,7 +47,14 @@ export class FrameClientRegistry {
             return existing;
         }
         if (existing) {
-            void existing.client.close();
+            this.logger.info('frame: the TV moved; reconnecting', {
+                tvId: tv.id,
+                from: `${existing.host}:${existing.port}`,
+                to: `${tv.host}:${tv.port}`,
+            });
+            existing.client
+                .close()
+                .catch((error: unknown) => this.logger.warn('frame: could not close the old connection', { tvId: tv.id, error: errorText(error) }));
         }
         const client = this.factory({ id: tv.id, host: tv.host, port: tv.port }, this.tokenStoreFor(tv.id));
         const entry = {

@@ -1,4 +1,6 @@
 import { MemoryTokenStore } from '@curator/frame';
+import type { Logger } from '@maroonedsoftware/logger';
+import { errorText } from '../../logging/error.text.js';
 import { FrameService } from '../frame/frame.service.js';
 import type { FrameClientFactory } from '../frame/frame.client.registry.js';
 import type { TvRepository } from '../tvs/tv.repository.js';
@@ -25,6 +27,7 @@ export class DiscoveryService {
         private readonly timeoutMs: number,
         /** How long to wait for one responder's REST info. A device that answers SSDP but not REST would otherwise hold the search for the client's connect timeout. */
         private readonly identifyTimeoutMs: number,
+        private readonly logger: Logger,
     ) {}
 
     /**
@@ -35,6 +38,7 @@ export class DiscoveryService {
         const responses = await this.search({ searchTargets: SAMSUNG_SEARCH_TARGETS, timeoutMs: this.timeoutMs });
         const hosts = [...new Set(responses.map(response => response.address))];
         const found = await Promise.all(hosts.map(host => this.identify(host)));
+        this.logger.info('discovery: searched', { answered: hosts.length, frames: found.filter(tv => tv !== undefined).length });
         return found.filter((tv): tv is DiscoveredTv => tv !== undefined).sort((a, b) => (a.name ?? a.host).localeCompare(b.name ?? b.host));
     }
 
@@ -46,12 +50,17 @@ export class DiscoveryService {
                 timer = setTimeout(() => resolve(undefined), this.identifyTimeoutMs);
             });
             const device = await Promise.race([new FrameService(client).deviceInfo(), timedOut]);
-            if (!device?.frameTvSupport) {
+            if (!device) {
+                this.logger.info('discovery: a TV did not say what it is in time; leaving it out', { host });
+                return undefined;
+            }
+            if (!device.frameTvSupport) {
                 return undefined;
             }
             const stored = await this.tvs.findByAddress(host, FRAME_PORT);
             return { host, port: FRAME_PORT, name: device.name, model: device.model, tvId: stored?.id };
-        } catch {
+        } catch (error) {
+            this.logger.info('discovery: could not ask a TV what it is; leaving it out', { host, error: errorText(error) });
             return undefined;
         } finally {
             clearTimeout(timer);
