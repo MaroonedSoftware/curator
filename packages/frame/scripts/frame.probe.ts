@@ -93,6 +93,8 @@ async function main() {
 
     await step('select test image', () => tv.select(contentId));
     console.log('      Check the TV now. Restoring and deleting shortly...');
+    // Run by hand with `pnpm probe`, never as a turbo task, so turbo's env hashing has no say in it.
+    // eslint-disable-next-line turbo/no-undeclared-env-vars
     await new Promise(r => setTimeout(r, Number(process.env.PROBE_HOLD_MS ?? 20_000)));
 
     const previous = current?.content_id;
