@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<Container version="2">
+    <Name>curator</Name>
+    <Repository>maroonedsoftware/curator:latest</Repository>
+    <Registry>https://hub.docker.com/r/maroonedsoftware/curator</Registry>
+    <Network>host</Network>
+    <Privileged>false</Privileged>
+    <Shell>sh</Shell>
+    <Support>https://github.com/MaroonedSoftware/curator/issues</Support>
+    <Project>https://github.com/MaroonedSoftware/curator</Project>
+    <TemplateURL>https://raw.githubusercontent.com/MaroonedSoftware/curator/main/unraid/curator.xml</TemplateURL>
+    <License>MIT</License>
+    <Overview>
+        Curates the art on Samsung's The Frame TVs: upload pictures to a TV, browse and choose what it
+        shows, group pieces into albums and have a TV rotate through one on a schedule, and back it all
+        up as a zip. A web app on your home network, with no sign-in, so keep it there.
+
+        The web app and its API share one port. The database schema is applied at every start, so
+        updating the container is all an upgrade takes.
+
+        Before the first start, give the Data folder to the container's user (uid 1000), which a folder
+        Unraid creates for you is not: chown -R 1000:1000 /mnt/user/appdata/curator. Otherwise nothing
+        it saves (uploaded originals, its log) can be written.
+
+        Start Postgres first. The container applies the schema before it serves anything and stops if
+        the database does not answer, so in the Docker tab put Postgres above curator and give it a
+        few seconds of autostart wait.
+
+        First run: open the web app, go to TVs, and search for your Frame (or add it by its address).
+        The TV shows a pairing prompt; accept it with the remote. Give each TV a DHCP reservation,
+        because a TV is remembered by its address.
+
+        Host networking is the default because the TVs page finds Frames by SSDP multicast, which
+        Docker's bridge network does not pass. On bridge everything else works; add each TV by address.
+    </Overview>
+    <Category>MediaApp:Photos Tools:</Category>
+    <Requires>
+        A PostgreSQL database that already exists (17 is what curator is tested on; no extensions
+        needed), and the Data folder owned by uid 1000. An x86-64 server: there is no arm64 image.
+    </Requires>
+    <WebUI>http://[IP]:[PORT:14100]/</WebUI>
+    <Icon>https://raw.githubusercontent.com/MaroonedSoftware/curator/main/apps/web/public/frame.svg</Icon>
+    <ExtraParams></ExtraParams>
+    <PostArgs></PostArgs>
+    <DonateText></DonateText>
+    <DonateLink></DonateLink>
+
+    <Config Name="WebUI" Target="14100" Default="14100" Mode="tcp"
+        Description="The web app, with its API under /api. On host networking (the default) nothing is mapped: the container listens on Port below itself, so keep the two the same and make sure nothing else on the server uses it. On bridge this is the host port mapped to the container's 14100."
+        Type="Port" Display="always" Required="true" Mask="false">14100</Config>
+
+    <Config Name="Data" Target="/data" Default="/mnt/user/appdata/curator" Mode="rw"
+        Description="The originals of every picture you upload (a TV keeps only its own resized copy and cannot hand the full image back) and the app's log. Everything else is in the database, so back up both. Must be writable by uid 1000: chown -R 1000:1000 on this folder before the first start."
+        Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/curator</Config>
+
+    <Config Name="Database host" Target="DATABASE_HOST" Default="" Mode=""
+        Description="Your PostgreSQL server. For a Postgres container on this server, the server's own address (such as 192.168.1.10) with Postgres's port published: a container name does not resolve from host networking."
+        Type="Variable" Display="always" Required="true" Mask="false"></Config>
+
+    <Config Name="Database port" Target="DATABASE_PORT" Default="5432" Mode=""
+        Description="" Type="Variable" Display="always" Required="false" Mask="false">5432</Config>
+
+    <Config Name="Database name" Target="DATABASE_NAME" Default="curator" Mode=""
+        Description="Must already exist (CREATE DATABASE curator, or POSTGRES_DB=curator on the official image). Curator creates its tables inside it at start, not the database itself."
+        Type="Variable" Display="always" Required="true" Mask="false">curator</Config>
+
+    <Config Name="Database user" Target="DATABASE_USER" Default="" Mode=""
+        Description="Owns the database: the schema is applied as this user at every start, so it needs to create tables."
+        Type="Variable" Display="always" Required="true" Mask="false"></Config>
+
+    <Config Name="Database password" Target="DATABASE_PASSWORD" Default="" Mode=""
+        Description="" Type="Variable" Display="always" Required="false" Mask="true"></Config>
+
+    <Config Name="Port" Target="PORT" Default="14100" Mode=""
+        Description="The port the app listens on inside the container. Only worth changing on host networking when 14100 is taken; set WebUI above to the same number so the WebUI link follows."
+        Type="Variable" Display="advanced" Required="false" Mask="false">14100</Config>
+</Container>

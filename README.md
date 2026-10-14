@@ -14,6 +14,7 @@ packages/
   frame/              @curator/frame: client for the Frame's local art-mode protocol (see its README)
   config-eslint/      @repo/config-eslint: shared ESLint flat config
   config-typescript/  @repo/config-typescript: shared tsconfig base
+unraid/curator.xml    the Unraid template for the image (see Running in Docker)
 ```
 
 ## Commands
@@ -83,6 +84,20 @@ or add each TV by address.
 
 Tags: `latest` follows `main`, `X.Y.Z` is a release and `X.Y` the newest release in that line, and
 every published commit is also its full sha. To build it locally: `docker build -t curator .`.
+
+### On Unraid
+
+`unraid/curator.xml` is a template for the image, on host networking so the TVs page can search.
+Until it is in Community Applications, add it from the Docker tab: Template Repositories, add
+`https://github.com/MaroonedSoftware/curator`, save, then Add Container and pick curator. (Or copy the
+file into `/boot/config/plugins/dockerMan/templates-user/` on the server.) Fill in your Postgres, then
+before the first start:
+
+- **The Data folder** (`/mnt/user/appdata/curator` by default) must be writable by the image's user,
+  uid 1000, and a folder Unraid creates is root's: `chown -R 1000:1000 /mnt/user/appdata/curator`.
+- **Postgres starts first.** The schema is applied before the app serves anything, and the container
+  stops if the database does not answer, so order Postgres above curator in the Docker tab and give
+  it a few seconds of autostart wait.
 
 ## Releasing
 
