@@ -1,9 +1,13 @@
 import type { Logger } from '@maroonedsoftware/logger';
 import type { LogLevel, RotatingLogStore } from './rotating.log.store.js';
+import { currentTrace } from './trace.context.js';
 
 /**
  * Writes every line to both another {@link Logger} (stdout, unchanged) and the {@link RotatingLogStore},
  * so the log can be read after the fact. No level gate: every level reaches both.
+ *
+ * The file's copy also carries the current trace (the request or rotation it belongs to). Stdout's
+ * doesn't: someone watching live is already following one thing, and an id on every line is noise.
  */
 export class CuratorLogger implements Logger {
     constructor(
@@ -43,7 +47,7 @@ export class CuratorLogger implements Logger {
      * is JSON rather than `[object Object]`.
      */
     private append(level: LogLevel, message: unknown, optionalParams: unknown[]): void {
-        const meta = metaFrom(optionalParams[0]);
+        const meta = withTrace(metaFrom(optionalParams[0]));
 
         if (typeof message === 'string') {
             this.store.append(level, message, meta);
@@ -54,6 +58,13 @@ export class CuratorLogger implements Logger {
             this.store.append(level, describe(message), meta);
         }
     }
+}
+
+/** Adds the current trace's id, unless the caller set `trace` or there is no trace. */
+function withTrace(meta: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+    const trace = currentTrace();
+    if (trace === undefined || (meta !== undefined && 'trace' in meta)) return meta;
+    return { ...meta, trace: trace.id };
 }
 
 /** The second argument as meta: a plain object as is, an Error as `error` and its stack, anything else dropped. */

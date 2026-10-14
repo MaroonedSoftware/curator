@@ -1,4 +1,6 @@
 import type { Logger } from '@maroonedsoftware/logger';
+import { randomUUID } from 'node:crypto';
+import { runInTrace } from '../../logging/trace.context.js';
 import type { RotationRepository } from './rotation.repository.js';
 import type { RotationService } from './rotation.service.js';
 
@@ -51,18 +53,21 @@ export class RotationScheduler {
         await Promise.allSettled(started);
     }
 
+    /** One TV's advance, in a trace of its own so its lines (the frame client's included) can be told apart. */
     private advance(tvId: string): Promise<void> {
-        const run = this.service
-            .advance(tvId)
-            .then(contentId => {
-                this.retryAt.delete(tvId);
-                this.logger.info(`rotation: TV ${tvId} now shows ${contentId}`);
-            })
-            .catch((error: unknown) => {
-                this.retryAt.set(tvId, this.now() + this.retryMs);
-                this.logger.warn(`rotation: could not advance TV ${tvId}`, error);
-            })
-            .finally(() => this.running.delete(tvId));
+        const run = runInTrace({ id: randomUUID().slice(0, 8), kind: 'rotation' }, () =>
+            this.service
+                .advance(tvId)
+                .then(contentId => {
+                    this.retryAt.delete(tvId);
+                    this.logger.info(`rotation: TV ${tvId} now shows ${contentId}`);
+                })
+                .catch((error: unknown) => {
+                    this.retryAt.set(tvId, this.now() + this.retryMs);
+                    this.logger.warn(`rotation: could not advance TV ${tvId}`, error);
+                })
+                .finally(() => this.running.delete(tvId)),
+        );
         this.running.set(tvId, run);
         return run;
     }

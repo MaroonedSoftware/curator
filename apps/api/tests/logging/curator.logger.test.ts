@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CuratorLogger } from '../../src/logging/curator.logger.js';
 import type { RotatingLogStore } from '../../src/logging/rotating.log.store.js';
+import { runInTrace } from '../../src/logging/trace.context.js';
 import { silentLogger } from '../test.server.js';
 
 /** A logger over a store that records what it was asked to write. */
@@ -48,5 +49,16 @@ describe('CuratorLogger', () => {
         log.warn({ reason: 'odd' });
 
         expect(lines[0]?.message).toBe('{"reason":"odd"}');
+    });
+
+    it('stamps the file copy, not stdout, with the current trace', () => {
+        const { log, lines, calls } = logger();
+
+        runInTrace({ id: 'req-1', kind: 'GET /tvs' }, () => log.info('tvs: listed', { count: 2 }));
+        log.info('outside');
+
+        expect(calls[0]).toEqual(['tvs: listed', { count: 2 }]);
+        expect(lines[0]?.meta).toEqual({ count: 2, trace: 'req-1' });
+        expect(lines[1]?.meta).toBeUndefined();
     });
 });
