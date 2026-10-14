@@ -33,6 +33,17 @@ export interface CurrentArt {
     raw: Record<string, unknown>;
 }
 
+export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error';
+
+/** One line of the API's log. `text` is the message and its `| key=value ...` details, as written. */
+export interface LogEntry {
+    /** ISO 8601, or empty for a line that didn't parse. */
+    ts: string;
+    /** Empty for a line that didn't parse. */
+    level: LogLevel | '';
+    text: string;
+}
+
 /** A TV curator manages. */
 export interface Tv {
     id: string;
@@ -171,6 +182,8 @@ const query = (params: Record<string, string | undefined>): string => {
 
 export const api = {
     health: () => request<Health>('/health'),
+    /** The API's log, newest first, from `level` up. */
+    logs: async (level?: LogLevel) => (await request<{ items: LogEntry[] }>(`/logs${query({ level, limit: '500' })}`)).items,
 
     tvs: async () => (await request<{ items: Tv[] }>('/tvs')).items,
     tv: (tvId: string) => request<Tv>(`/tvs/${encodeURIComponent(tvId)}`),
