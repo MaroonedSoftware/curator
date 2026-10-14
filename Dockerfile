@@ -98,7 +98,8 @@ LABEL org.opencontainers.image.revision="${REVISION}" \
 ENV BUILD_REVISION=${REVISION} \
     BUILD_VERSION=${VERSION}
 
-USER node
+# No USER: the entrypoint starts as root only to hand /data to PUID:PGID (node's 1000:1000 unless
+# set), then drops to them for the migrations and the server. Unraid sets 99:100, nobody:users.
 EXPOSE 14100
 VOLUME ["/data"]
 

@@ -18,13 +18,8 @@
         The web app and its API share one port. The database schema is applied at every start, so
         updating the container is all an upgrade takes.
 
-        Before the first start, give the Data folder to the container's user (uid 1000), which a folder
-        Unraid creates for you is not: chown -R 1000:1000 /mnt/user/appdata/curator. Otherwise nothing
-        it saves (uploaded originals, its log) can be written.
-
-        Start Postgres first. The container applies the schema before it serves anything and stops if
-        the database does not answer, so in the Docker tab put Postgres above curator and give it a
-        few seconds of autostart wait.
+        It waits up to two minutes for the database at start, so it can boot alongside your Postgres
+        container, and it takes ownership of its Data folder as nobody:users, Unraid's usual owner.
 
         First run: open the web app, go to TVs, and search for your Frame (or add it by its address).
         The TV shows a pairing prompt; accept it with the remote. Give each TV a DHCP reservation,
@@ -36,7 +31,7 @@
     <Category>MediaApp:Photos Tools:</Category>
     <Requires>
         A PostgreSQL database that already exists (17 is what curator is tested on; no extensions
-        needed), and the Data folder owned by uid 1000. An x86-64 server: there is no arm64 image.
+        needed). An x86-64 server: there is no arm64 image.
     </Requires>
     <WebUI>http://[IP]:[PORT:14100]/</WebUI>
     <Icon>https://raw.githubusercontent.com/MaroonedSoftware/curator/main/apps/web/public/frame.svg</Icon>
@@ -50,7 +45,7 @@
         Type="Port" Display="always" Required="true" Mask="false">14100</Config>
 
     <Config Name="Data" Target="/data" Default="/mnt/user/appdata/curator" Mode="rw"
-        Description="The originals of every picture you upload (a TV keeps only its own resized copy and cannot hand the full image back) and the app's log. Everything else is in the database, so back up both. Must be writable by uid 1000: chown -R 1000:1000 on this folder before the first start."
+        Description="The originals of every picture you upload (a TV keeps only its own resized copy and cannot hand the full image back) and the app's log. Everything else is in the database, so back up both. Owned by the user and group below; the container sets that itself at start."
         Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/curator</Config>
 
     <Config Name="Database host" Target="DATABASE_HOST" Default="" Mode=""
@@ -74,4 +69,12 @@
     <Config Name="Port" Target="PORT" Default="14100" Mode=""
         Description="The port the app listens on inside the container. Only worth changing on host networking when 14100 is taken; set WebUI above to the same number so the WebUI link follows."
         Type="Variable" Display="advanced" Required="false" Mask="false">14100</Config>
+
+    <Config Name="User ID" Target="PUID" Default="99" Mode=""
+        Description="Who the app runs as, and who owns everything it writes to Data. 99 is nobody, which is what the rest of appdata belongs to on Unraid. The container makes Data theirs at start if it is not already."
+        Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+
+    <Config Name="Group ID" Target="PGID" Default="100" Mode=""
+        Description="The group for the same: 100 is users."
+        Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
 </Container>

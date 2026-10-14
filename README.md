@@ -76,6 +76,10 @@ volumes:
 
 The web app is then on port 14100, with the API under `/api`. `DATABASE_PORT` (default 5432) and
 `PORT` (default 14100) are also read. Uploaded originals and the log live on the `/data` volume.
+
+At start the container waits up to two minutes for the database, applies any new migrations, then
+serves. It runs as `PUID:PGID` (default 1000:1000): it starts as root only to make `/data` theirs when
+it is not already (a bind-mounted folder Docker created is root's), then drops to them.
 The config is `apps/api/appconfig.production.yaml`.
 
 Every connection to a TV is outbound, so bridge networking works, but SSDP discovery (the TVs page's
@@ -90,14 +94,9 @@ every published commit is also its full sha. To build it locally: `docker build 
 `unraid/curator.xml` is a template for the image, on host networking so the TVs page can search.
 Until it is in Community Applications, add it from the Docker tab: Template Repositories, add
 `https://github.com/MaroonedSoftware/curator`, save, then Add Container and pick curator. (Or copy the
-file into `/boot/config/plugins/dockerMan/templates-user/` on the server.) Fill in your Postgres, then
-before the first start:
-
-- **The Data folder** (`/mnt/user/appdata/curator` by default) must be writable by the image's user,
-  uid 1000, and a folder Unraid creates is root's: `chown -R 1000:1000 /mnt/user/appdata/curator`.
-- **Postgres starts first.** The schema is applied before the app serves anything, and the container
-  stops if the database does not answer, so order Postgres above curator in the Docker tab and give
-  it a few seconds of autostart wait.
+file into `/boot/config/plugins/dockerMan/templates-user/` on the server.) Fill in your Postgres and
+start it. The template runs the app as `nobody:users` (`PUID=99`, `PGID=100`), Unraid's owner for
+appdata.
 
 ## Releasing
 
