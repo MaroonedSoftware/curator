@@ -37,13 +37,14 @@ RUN set -eux; \
 # Trixie to match the runtime, because sharp's native binding is installed here and loaded there.
 FROM node:26-trixie-slim AS workspace
 
-# pnpm comes from npm rather than from corepack: Node 25 and later ship no corepack binary. It still
-# reads the repo's `packageManager` pin, so the version is the lockfile's rather than this line's.
-RUN npm install -g corepack@latest && corepack enable
-
 WORKDIR /app
 
 COPY --from=manifests /manifests/ ./
+
+# pnpm straight from npm, at the version the repo's `packageManager` pins: Node 25 and later ship no
+# corepack, and installing corepack itself would mean a version of it to pin as well.
+RUN npm install -g "pnpm@$(node -p "require('./package.json').packageManager.replace(/^pnpm@/, '').split('+')[0]")"
+
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
     pnpm install --frozen-lockfile
 
