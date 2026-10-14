@@ -9,7 +9,7 @@
 
 # dbmate, copied out of its own image rather than installed from npm: in the workspace it is a dev
 # dependency, which the production install below leaves out. GHCR, so it never counts against a
-# Docker Hub pull limit. Keep the version in step with apps/api's devDependency.
+# Docker Hub pull limit. Keep the version in step with apps/api's devDependency (build.yml checks).
 FROM ghcr.io/amacneil/dbmate:2.36.0 AS dbmate
 
 # ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -37,13 +37,14 @@ RUN set -eux; \
 # Trixie to match the runtime, because sharp's native binding is installed here and loaded there.
 FROM node:26-trixie-slim AS workspace
 
-# pnpm comes from npm rather than from corepack: Node 25 and later ship no corepack binary. It still
-# reads the repo's `packageManager` pin, so the version is the lockfile's rather than this line's.
-RUN npm install -g corepack@latest && corepack enable
-
 WORKDIR /app
 
 COPY --from=manifests /manifests/ ./
+
+# pnpm straight from npm, at the version the repo's `packageManager` pins: Node 25 and later ship no
+# corepack, and installing corepack itself would mean a version of it to pin as well.
+RUN npm install -g "pnpm@$(node -p "require('./package.json').packageManager.replace(/^pnpm@/, '').split('+')[0]")"
+
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
     pnpm install --frozen-lockfile
 
@@ -70,7 +71,9 @@ FROM node:26-trixie-slim
 COPY --from=dbmate /usr/local/bin/dbmate /usr/local/bin/dbmate
 
 WORKDIR /app
-# The tree is root's and read-only to the server; only /data is the server's to write.
+# The tree is root's and read-only to the server; only /data is the server's to write. The
+# entrypoint starts as root only to hand /data to PUID:PGID (default 1000:1000, the image's `node`
+# user), then runs everything else as that user.
 COPY --from=workspace /deploy ./
 COPY docker/curator.entrypoint.sh /usr/local/bin/curator-entrypoint
 RUN mkdir -p /data && chown node:node /data
@@ -98,12 +101,12 @@ LABEL org.opencontainers.image.revision="${REVISION}" \
 ENV BUILD_REVISION=${REVISION} \
     BUILD_VERSION=${VERSION}
 
-USER node
 EXPOSE 14100
 VOLUME ["/data"]
 
-# Liveness only: /health never touches the database or a TV.
+# Liveness only: /health never touches the database or a TV. A blank PORT falls back to 14100, as
+# the server's own config does.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD node -e "fetch('http://127.0.0.1:'+process.env.PORT+'/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+    CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||14100)+'/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
 
 ENTRYPOINT ["curator-entrypoint"]

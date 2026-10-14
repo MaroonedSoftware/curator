@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { databaseUrl } from './server/database.url.js';
 import { API_ROOT, loadConfig } from './server/load.config.js';
 
-const result = spawnSync('dbmate', ['--no-dump-schema', '-d', `${API_ROOT}data/migrations`, 'up'], {
+const result = spawnSync('dbmate', ['--wait', '--no-dump-schema', '-d', `${API_ROOT}data/migrations`, 'up'], {
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: databaseUrl(await loadConfig()) },
 });
