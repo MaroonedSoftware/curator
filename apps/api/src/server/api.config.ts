@@ -2,20 +2,46 @@ import type { AppConfig } from '@maroonedsoftware/appconfig';
 import { z } from 'zod';
 
 /** `${env:NAME}` substitutions arrive as strings, so numbers and booleans accept either form. */
-const port = z.coerce.number().int().min(0).max(65535);
+const port = (fallback: number) =>
+    z.preprocess(
+        // An unset variable substitutes as '', which would coerce to port 0: take it as "not set" instead.
+        value => (value === '' || value === undefined ? fallback : value),
+        z.coerce.number().int().min(0).max(65535),
+    );
+
+/** The resolver JSON-parses what it substitutes, so a password of `1234` arrives as a number. */
+const text = z.coerce.string();
 
 const ApiConfigSchema = z.object({
     server: z.object({
-        port: port.default(14100),
+        port: port(14100),
         /** Comma-separated browser origins allowed by CORS. Empty allows none. */
         corsOrigins: z.string().default(''),
+        /**
+         * Path every API route is mounted under, such as `/api` when the API also serves the web app
+         * from the same origin. Empty mounts them at the root, which is what the web dev server's
+         * proxy expects: it strips `/api` before forwarding.
+         */
+        routePrefix: z
+            .string()
+            .regex(/^(\/[A-Za-z0-9._~-]+)*$/, 'must be empty, or start with / and not end with one')
+            .default(''),
     }),
+    web: z
+        .object({
+            /**
+             * The web app's build (`apps/web/dist`), served from the same origin as the API. Unset
+             * serves nothing, which is right whenever the web dev server is in front. Relative to apps/api.
+             */
+            dir: z.string().min(1).optional(),
+        })
+        .prefault({}),
     database: z.object({
         host: z.string().min(1),
-        port: port.default(5432),
-        user: z.string().min(1),
-        password: z.string(),
-        name: z.string().min(1),
+        port: port(5432),
+        user: text.pipe(z.string().min(1)),
+        password: text,
+        name: text.pipe(z.string().min(1)),
         pool: z
             .object({
                 max: z.coerce.number().int().positive().default(5),

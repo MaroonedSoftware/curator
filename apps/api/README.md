@@ -8,6 +8,7 @@ HTTP API over [`@curator/frame`](../../packages/frame/README.md), built on
 ```
 src/
   index.ts               entry point: load config, start the server
+  migrate.ts             compiled entry point that applies data/migrations with dbmate (the Docker image)
   server/                config loading and validation, the plugin stack, buildServer/startServer
   logging/               the rotating log file, the logger that tees to it, and request/rotation traces
   modules/               ServerKit modules (DI registrations and lifecycle hooks), in setup order
@@ -64,6 +65,11 @@ To run without a TV, start the fake one (`pnpm fake:tv` in `packages/frame`) and
 `{"host":"127.0.0.1","port":14180}`.
 
 There is no authentication: the API is meant for the home network the TV sits on.
+
+The API can also serve the web app, so one process answers on one origin (this is how the Docker
+image runs). Set `web.dir` to the web build (`apps/web/dist`) and `server.routePrefix` to `/api`,
+where the web app looks for the API. Any GET outside `/api` that names no file answers
+`index.html`, for the web app's client-side routes.
 
 ## Logging
 

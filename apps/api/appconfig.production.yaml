@@ -1,0 +1,28 @@
+# The Docker image's config (NODE_ENV=production). Committed: nothing here is a secret, and
+# everything that differs between installs comes from the environment. An unset port falls back
+# to its default; an unset host, user or database name fails at boot with its key named.
+#
+# The API serves the web app from this one origin, so CORS allows nothing and the routes sit under
+# /api, where the web app looks for them.
+
+server:
+    port: ${env:PORT}
+    corsOrigins: ''
+    routePrefix: /api
+
+web:
+    dir: public
+
+database:
+    host: ${env:DATABASE_HOST}
+    port: ${env:DATABASE_PORT}
+    user: ${env:DATABASE_USER}
+    password: ${env:DATABASE_PASSWORD}
+    name: ${env:DATABASE_NAME}
+
+# Everything the API writes lives on the image's one volume.
+frame:
+    originalsDir: /data/originals
+
+log:
+    dir: /data/logs

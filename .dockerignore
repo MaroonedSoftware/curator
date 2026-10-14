@@ -1,0 +1,21 @@
+# Everything built is built inside the image, so nothing built outside it rides along: a `dist/`
+# or `node_modules` from the host is another platform's idea of the same code.
+**/node_modules
+**/dist
+**/.turbo
+.pnpm-store
+.git
+.github
+.claude
+**/*.log
+
+# The API's own state on a developer's machine (uploaded originals, logs) and per-machine config.
+**/.data
+**/appconfig.local.yaml
+**/.env
+**/.env.*
+
+# Tests never run in the image, and the build tsconfigs read `src` alone, so editing one should not
+# rebuild it.
+apps/*/tests
+packages/*/tests

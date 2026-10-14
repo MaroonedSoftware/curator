@@ -13,9 +13,11 @@
         "typecheck": "turbo run typecheck",
         "db:up": "docker compose up -d --wait db db-test",
         "db:reset": "docker compose rm -sfv db && docker volume rm -f curator_curator-db && docker compose up -d --wait db && turbo run migrate:up",
-        "migrate:up": "turbo run migrate:up"
+        "migrate:up": "turbo run migrate:up",
+        "changeset": "changeset"
     },
     "devDependencies": {
+        "@changesets/cli": "^3.0.3",
         "@types/node": "^26.6.5",
         "eslint": "^10.12.0",
         "prettier": "^3.9.9",

@@ -19,3 +19,18 @@ updates:
                   - '*'
       commit-message:
           prefix: ci
+
+    # The Dockerfile's base images: node, and the dbmate image the binary is copied from. On the
+    # same clock and cooldown as the actions, for the same reasons.
+    - package-ecosystem: docker
+      directory: /
+      schedule:
+          interval: weekly
+      cooldown:
+          default-days: 7
+      groups:
+          images:
+              patterns:
+                  - '*'
+      commit-message:
+          prefix: build

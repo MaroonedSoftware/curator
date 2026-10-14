@@ -1,0 +1,12 @@
+{
+    "$schema": "https://unpkg.com/@changesets/config@4.0.0/schema.json",
+    "changelog": "@changesets/cli/changelog",
+    "commit": false,
+    "fixed": [["@curator/api", "@curator/web", "@curator/frame"]],
+    "linked": [],
+    "access": "restricted",
+    "baseBranch": "main",
+    "updateInternalDependencies": "patch",
+    "ignore": ["@repo/config-eslint", "@repo/config-typescript"],
+    "privatePackages": { "version": true, "tag": false }
+}
