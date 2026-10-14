@@ -15,6 +15,11 @@ jobs:
     build:
         uses: ./.github/workflows/build.yml
 
+    # Proves the image builds, into the builder's cache alone: a pull request publishes nothing and is
+    # given no registry credentials.
+    images:
+        uses: ./.github/workflows/images.yml
+
     # The one check a ruleset on main should require. Job names inside a called workflow come out as
     # `build / build` and `build / test`, and that list will grow; requiring this instead means the
     # ruleset never goes stale.
@@ -22,7 +27,7 @@ jobs:
     # `always()`, because a job whose need failed is skipped rather than failed, and a skipped
     # required check reads as a pass.
     ci-ok:
-        needs: [build]
+        needs: [build, images]
         if: always()
         runs-on: ubuntu-latest
         timeout-minutes: 5
@@ -30,9 +35,14 @@ jobs:
             - name: Every job passed
               env:
                   BUILD: ${{ needs.build.result }}
+                  IMAGES: ${{ needs.images.result }}
               run: |
-                  echo "build=$BUILD"
+                  echo "build=$BUILD images=$IMAGES"
                   if [ "$BUILD" != success ]; then
                       echo "::error::The build ended $BUILD."
+                      exit 1
+                  fi
+                  if [ "$IMAGES" != success ]; then
+                      echo "::error::The image build ended $IMAGES."
                       exit 1
                   fi

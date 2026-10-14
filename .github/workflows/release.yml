@@ -1,0 +1,58 @@
+name: Release
+
+# Every commit on main gets a result of its own, its build seeds the task cache that pull requests
+# restore from, and its image is published: pushed as `maroonedsoftware/curator:<sha>` beside the
+# build, then `latest` moved onto it once the tests have passed.
+on:
+    push:
+        branches: [main]
+    # A rebuild and republish of main on demand, say for a base image's security fix.
+    workflow_dispatch:
+
+# One release at a time, and never cancelled: a run interrupted between the push and the promote
+# leaves an image nobody's tag names, which is harmless, but one interrupted mid-promote is not.
+concurrency:
+    group: release-${{ github.ref }}
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+
+jobs:
+    build:
+        uses: ./.github/workflows/build.yml
+
+    # Deliberately not `needs: [build]`, so the image builds beside the tests rather than behind them.
+    # What has to wait for the tests is the tag people pull by name, not the image, so this publishes
+    # the commit tag alone and `promote` moves `latest`.
+    images:
+        uses: ./.github/workflows/images.yml
+        with:
+            push: true
+        secrets: inherit
+
+    # A registry-side retag, so it takes seconds.
+    promote:
+        needs: [build, images]
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        env:
+            # Keep in step with `env.IMAGE` in images.yml.
+            IMAGE: maroonedsoftware/curator
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+
+            - name: Log in to Docker Hub
+              uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            # Why a tag never moves backwards is in the script.
+            - name: Move latest onto this commit, unless it names a newer one
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: .github/scripts/promote.sh

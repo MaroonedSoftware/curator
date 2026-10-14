@@ -1,6 +1,6 @@
 name: Build
 
-# The whole check, called by `pr.yml` and `main.yml`. Two jobs side by side: `build` compiles,
+# The whole check, called by `pr.yml` and `release.yml`. Two jobs side by side: `build` compiles,
 # lints and type-checks, `test` runs the suites against a throwaway Postgres.
 on:
     workflow_call:

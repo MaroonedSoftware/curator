@@ -81,7 +81,8 @@ Every connection to a TV is outbound, so bridge networking works, but SSDP disco
 Search) needs multicast on the TVs' network: run with `network_mode: host` (and no `ports`) to use it,
 or add each TV by address.
 
-To build it locally: `docker build -t curator .`.
+Every push to `main` publishes the image under its full commit sha, and `latest` moves onto it once
+the tests pass (`.github/workflows/release.yml`). To build it locally: `docker build -t curator .`.
 
 ## Ports
 
