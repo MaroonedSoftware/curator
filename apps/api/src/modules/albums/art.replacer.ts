@@ -5,6 +5,7 @@ import { type ListedArt, MY_PHOTOS, type Uploaded } from '../frame/frame.service
 import type { TvService } from '../tvs/tv.service.js';
 import type { AlbumRepository } from './album.repository.js';
 import type { RotationRepository } from './rotation.repository.js';
+import { errorText } from '../../logging/error.text.js';
 
 /** Uploads are ours to replace: anything in My Photos, or with an upload's id. The Art Store's pieces can't be deleted. */
 const isUpload = (item: ListedArt) => item.categoryIds.includes(MY_PHOTOS) || /^MY[-_]F/.test(item.contentId);
@@ -58,7 +59,12 @@ export class ArtReplacer {
         try {
             await frame.delete(old.contentId);
         } catch (error) {
-            this.logger.warn(`replaced ${old.contentId} with ${uploaded.contentId}, but could not delete ${old.contentId}`, error);
+            this.logger.warn('replace: replaced a piece, but could not delete the old one', {
+                tvId,
+                from: old.contentId,
+                to: uploaded.contentId,
+                error: errorText(error),
+            });
         }
         return uploaded;
     }

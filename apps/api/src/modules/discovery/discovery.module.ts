@@ -1,4 +1,5 @@
 import type { ServerKitModule } from '@maroonedsoftware/fastify';
+import { Logger } from '@maroonedsoftware/logger';
 import { parseApiConfig } from '../../server/api.config.js';
 import { FrameClientFactoryToken } from '../frame/frame.client.registry.js';
 import { TvRepository } from '../tvs/tv.repository.js';
@@ -21,6 +22,7 @@ export const DiscoveryModule: ServerKitModule = {
                         container.get(TvRepository),
                         discovery.timeoutMs,
                         discovery.identifyTimeoutMs,
+                        container.get(Logger),
                     ),
             )
             .asSingleton();

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LogsRouteImport } from './routes/logs'
 import { Route as TvsIndexRouteImport } from './routes/tvs.index'
 import { Route as TvsTvIdRouteImport } from './routes/tvs.$tvId'
 import { Route as TvsTvIdIndexRouteImport } from './routes/tvs.$tvId.index'
@@ -22,6 +23,11 @@ import { Route as TvsTvIdAlbumsAlbumIdRouteImport } from './routes/tvs.$tvId.alb
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LogsRoute = LogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TvsIndexRoute = TvsIndexRouteImport.update({
@@ -67,6 +73,7 @@ const TvsTvIdAlbumsAlbumIdRoute = TvsTvIdAlbumsAlbumIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/logs': typeof LogsRoute
   '/tvs/$tvId': typeof TvsTvIdRouteWithChildren
   '/tvs/': typeof TvsIndexRoute
   '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/logs': typeof LogsRoute
   '/tvs': typeof TvsIndexRoute
   '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute
   '/tvs/$tvId/status': typeof TvsTvIdStatusRoute
@@ -89,6 +97,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/logs': typeof LogsRoute
   '/tvs/$tvId': typeof TvsTvIdRouteWithChildren
   '/tvs/': typeof TvsIndexRoute
   '/tvs/$tvId/library': typeof TvsTvIdLibraryRoute
@@ -102,6 +111,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/logs'
     | '/tvs/$tvId'
     | '/tvs/'
     | '/tvs/$tvId/library'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/logs'
     | '/tvs'
     | '/tvs/$tvId/library'
     | '/tvs/$tvId/status'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/logs'
     | '/tvs/$tvId'
     | '/tvs/'
     | '/tvs/$tvId/library'
@@ -135,6 +147,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LogsRoute: typeof LogsRoute
   TvsTvIdRoute: typeof TvsTvIdRouteWithChildren
   TvsIndexRoute: typeof TvsIndexRoute
 }
@@ -146,6 +159,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/logs': {
+      id: '/logs'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof LogsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tvs/': {
@@ -230,6 +250,7 @@ const TvsTvIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LogsRoute: LogsRoute,
   TvsTvIdRoute: TvsTvIdRouteWithChildren,
   TvsIndexRoute: TvsIndexRoute,
 }

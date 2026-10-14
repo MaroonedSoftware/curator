@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { FrameClientRegistry, type TvAddress } from '../../../src/modules/frame/frame.client.registry.js';
 import { ThumbnailCache } from '../../../src/modules/frame/thumbnail.cache.js';
 import { FakeFrameClient } from '../../fake.frame.client.js';
+import { silentLogger } from '../../test.server.js';
 
 const registryWithFakes = () => {
     const built: { address: TvAddress; client: FakeFrameClient }[] = [];
@@ -12,6 +13,7 @@ const registryWithFakes = () => {
             built.push({ address, client });
             return client;
         },
+        silentLogger,
         () => new MemoryTokenStore(),
         new ThumbnailCache(1024 * 1024),
     );

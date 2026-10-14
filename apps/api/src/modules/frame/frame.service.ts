@@ -5,6 +5,7 @@ import { normalizeContentId } from './content.id.js';
 import { fingerprintOf, type Original, type TvOriginals } from './original.store.js';
 import type { ThumbnailBatcher } from './thumbnail.batcher.js';
 import { toHttpError } from './frame.http.errors.js';
+import { errorText } from '../../logging/error.text.js';
 
 /** The artwork on screen. `contentId` is absent when the TV did not say. */
 /** My Photos: where the TV files uploads. */
@@ -124,7 +125,7 @@ export class FrameService {
         try {
             await this.originals?.store.save(contentId, opts.fileType, image);
         } catch (error) {
-            this.originals?.logger.error(`could not keep the original of ${contentId}`, error);
+            this.originals?.logger.error('originals: could not keep an upload', { contentId, error: errorText(error) });
         }
         return { contentId, duplicate: false };
     }
@@ -140,7 +141,7 @@ export class FrameService {
         try {
             matches = await this.originals.store.withFingerprint(fingerprintOf(image));
         } catch (error) {
-            this.originals.logger.error('could not read the fingerprints of the kept originals', error);
+            this.originals.logger.error('originals: could not read the fingerprints; uploading as new', { error: errorText(error) });
             return undefined;
         }
         if (matches.length === 0) return undefined;
@@ -161,7 +162,7 @@ export class FrameService {
         try {
             await this.originals?.store.delete(contentId);
         } catch (error) {
-            this.originals?.logger.error(`could not delete the original of ${contentId}`, error);
+            this.originals?.logger.error('originals: could not delete one', { contentId, error: errorText(error) });
         }
     }
 

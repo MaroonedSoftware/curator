@@ -1,5 +1,9 @@
 import { IsHttpError } from '@maroonedsoftware/errors';
 import type { Logger } from '@maroonedsoftware/logger';
+import { randomUUID } from 'node:crypto';
+import { appFrames } from '../../logging/curator.logger.js';
+import { errorText } from '../../logging/error.text.js';
+import { runInTrace } from '../../logging/trace.context.js';
 import type { RotationRepository } from './rotation.repository.js';
 import type { RotationService } from './rotation.service.js';
 
@@ -10,7 +14,7 @@ import type { RotationService } from './rotation.service.js';
  *
  * A failing TV is logged once, as a warning, when it starts failing, and again when it comes back;
  * the retries in between only log at debug. An HTTP error (the TV's own failures, or a 404 or 409
- * from the rotation) logs as its one-line reason; anything else logs whole, since it is a bug.
+ * from the rotation) logs as its one-line reason; anything else logs with its stack, since it is a bug.
  */
 export class RotationScheduler {
     private timer?: NodeJS.Timeout;
@@ -29,6 +33,7 @@ export class RotationScheduler {
 
     start(): void {
         this.stop();
+        this.logger.info('rotation: started', { tickMs: this.tickMs, retryMs: this.retryMs });
         this.timer = setInterval(() => void this.tick(), this.tickMs);
         // A server with nothing else to do may still exit.
         this.timer.unref();
@@ -37,6 +42,7 @@ export class RotationScheduler {
 
     /** Stops ticking, and waits for any advance in flight. */
     async stop(): Promise<void> {
+        if (this.timer !== undefined) this.logger.info('rotation: stopped');
         clearInterval(this.timer);
         this.timer = undefined;
         await Promise.allSettled(this.running.values());
@@ -48,7 +54,7 @@ export class RotationScheduler {
         try {
             due = await this.rotations.due();
         } catch (error) {
-            this.logger.error('rotation: could not read the due rotations', error);
+            this.logger.error('rotation: could not read the due rotations', { error: errorText(error) });
             return;
         }
         const now = this.now();
@@ -56,26 +62,35 @@ export class RotationScheduler {
         await Promise.allSettled(started);
     }
 
+    /** One TV's advance, in a trace of its own so its lines (the frame client's included) can be told apart. */
     private advance(tvId: string): Promise<void> {
-        const run = this.service
-            .advance(tvId)
-            .then(contentId => {
-                const recovered = this.retryAt.delete(tvId);
-                this.logger.info(`rotation: TV ${tvId} ${recovered ? 'is back and ' : ''}now shows ${contentId}`);
-            })
-            .catch((error: unknown) => {
-                const failing = this.retryAt.has(tvId);
-                this.retryAt.set(tvId, this.now() + this.retryMs);
-                const retry = `retrying in ${Math.round(this.retryMs / 1000)}s`;
-                if (failing) {
-                    this.logger.debug(`rotation: TV ${tvId} still could not advance (${reasonOf(error)}), ${retry}`);
-                } else if (IsHttpError(error)) {
-                    this.logger.warn(`rotation: could not advance TV ${tvId} (${reasonOf(error)}), ${retry}`);
-                } else {
-                    this.logger.warn(`rotation: could not advance TV ${tvId}, ${retry}`, error);
-                }
-            })
-            .finally(() => this.running.delete(tvId));
+        const run = runInTrace({ id: randomUUID().slice(0, 8), kind: 'rotation' }, () =>
+            this.service
+                .advance(tvId)
+                .then(contentId => {
+                    const recovered = this.retryAt.delete(tvId);
+                    this.logger.info(recovered ? 'rotation: the TV is back and advanced' : 'rotation: advanced', { tvId, contentId });
+                })
+                .catch((error: unknown) => {
+                    const failing = this.retryAt.has(tvId);
+                    this.retryAt.set(tvId, this.now() + this.retryMs);
+                    const retryInSeconds = Math.round(this.retryMs / 1000);
+                    if (failing) {
+                        this.logger.debug('rotation: still could not advance; retrying later', { tvId, reason: reasonOf(error), retryInSeconds });
+                    } else if (IsHttpError(error)) {
+                        this.logger.warn('rotation: could not advance; retrying later', { tvId, reason: reasonOf(error), retryInSeconds });
+                    } else {
+                        const stack = appFrames(error instanceof Error ? error.stack : undefined);
+                        this.logger.warn('rotation: could not advance; retrying later', {
+                            tvId,
+                            error: errorText(error),
+                            retryInSeconds,
+                            ...(stack && { stack }),
+                        });
+                    }
+                })
+                .finally(() => this.running.delete(tvId)),
+        );
         this.running.set(tvId, run);
         return run;
     }

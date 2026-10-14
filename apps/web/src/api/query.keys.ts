@@ -1,6 +1,7 @@
 /** Every query key, in one place, so a mutation can name exactly what it invalidates. */
 export const queryKeys = {
     health: ['health'] as const,
+    logs: (level?: string) => ['logs', level ?? 'all'] as const,
     /** The list of TVs. Invalidate with `exact: true`, or every TV's art goes with it. */
     tvs: ['tvs'] as const,
     discoveredTvs: ['tvs-discover'] as const,

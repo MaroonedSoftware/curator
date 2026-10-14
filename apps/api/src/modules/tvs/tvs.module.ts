@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { format } from 'node:util';
 import { SamsungFrameClient } from '@curator/frame';
 import type { ServerKitModule } from '@maroonedsoftware/fastify';
 import { Logger } from '@maroonedsoftware/logger';
@@ -31,19 +32,24 @@ export const TvsModule: ServerKitModule = {
             .register(FrameClientFactoryToken)
             .useFactory(container => {
                 const logger = container.get(Logger);
-                const factory: FrameClientFactory = (tv, tokenStore) =>
-                    new SamsungFrameClient({
+                const factory: FrameClientFactory = (tv, tokenStore) => {
+                    // The client logs printf-style; each line is formatted here, so the file gets the
+                    // whole sentence, and tagged with the TV it came from.
+                    const meta = { tvId: tv.id, host: tv.host };
+                    const line = (msg: string, args: unknown[]) => `frame: ${format(msg, ...args)}`;
+                    return new SamsungFrameClient({
                         host: tv.host,
                         port: tv.port,
                         name: frame.clientName,
                         tokenStore,
                         logger: {
                             // The client logs every wire frame at debug, so it reaches the log only when asked for.
-                            debug: frame.debug ? (msg, ...args) => logger.debug(msg, ...args) : () => {},
-                            info: (msg, ...args) => logger.info(msg, ...args),
-                            warn: (msg, ...args) => logger.warn(msg, ...args),
+                            debug: frame.debug ? (msg, ...args) => logger.debug(line(msg, args), meta) : () => {},
+                            info: (msg, ...args) => logger.info(line(msg, args), meta),
+                            warn: (msg, ...args) => logger.warn(line(msg, args), meta),
                         },
                     });
+                };
                 return factory;
             })
             .asSingleton();
@@ -54,6 +60,7 @@ export const TvsModule: ServerKitModule = {
                 const tvs = container.get(TvRepository);
                 return new FrameClientRegistry(
                     container.get(FrameClientFactoryToken),
+                    container.get(Logger),
                     tvId => new DbTokenStore(tvs, tvId),
                     new ThumbnailCache(frame.thumbnailCacheMegabytes * 1024 * 1024),
                 );

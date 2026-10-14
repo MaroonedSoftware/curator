@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { AppShell, Burger, Divider, Group, NavLink, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconActivity, IconAlbum, IconDeviceTv, IconLibraryPhoto, IconPhotoHeart, IconUpload, type Icon } from '@tabler/icons-react';
+import { IconActivity, IconAlbum, IconDeviceTv, IconFileText, IconLibraryPhoto, IconPhotoHeart, IconUpload, type Icon } from '@tabler/icons-react';
 import { Link, useLocation, useParams } from '@tanstack/react-router';
 import { ApiStatus } from './api.status';
 import { TvSwitcher } from './tv.switcher';
@@ -68,6 +68,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     label="TVs"
                     leftSection={<IconDeviceTv size={18} stroke={1.5} />}
                     active={pathname === '/tvs' || pathname === '/tvs/'}
+                    onClick={close}
+                />
+                <NavLink
+                    component={Link}
+                    to="/logs"
+                    label="Logs"
+                    leftSection={<IconFileText size={18} stroke={1.5} />}
+                    active={pathname === '/logs'}
                     onClick={close}
                 />
             </AppShell.Navbar>
