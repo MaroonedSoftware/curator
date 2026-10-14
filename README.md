@@ -81,8 +81,24 @@ Every connection to a TV is outbound, so bridge networking works, but SSDP disco
 Search) needs multicast on the TVs' network: run with `network_mode: host` (and no `ports`) to use it,
 or add each TV by address.
 
-Every push to `main` publishes the image under its full commit sha, and `latest` moves onto it once
-the tests pass (`.github/workflows/release.yml`). To build it locally: `docker build -t curator .`.
+Tags: `latest` follows `main`, `X.Y.Z` is a release and `X.Y` the newest release in that line, and
+every published commit is also its full sha. To build it locally: `docker build -t curator .`.
+
+## Releasing
+
+Releases come from [changesets](https://github.com/changesets/changesets), and all of it runs in
+`.github/workflows/release.yml`:
+
+1. A pull request a user would notice carries a changeset (`pnpm changeset`; see `.changeset/README.md`).
+2. Every push to `main` publishes the image under its commit sha and moves `latest` onto it once the
+   tests pass. If changesets are pending, it also opens (or rebuilds) a **Version packages** pull
+   request that bumps the version and writes `apps/api/CHANGELOG.md`.
+3. Merging that pull request is the release: its push finds a version with no `v*` tag, publishes the
+   image as `X.Y.Z` and `X.Y`, then tags `vX.Y.Z` and creates the GitHub release from the changelog.
+
+A failed release cuts no tag, so the next push to `main` retries it. Publishing needs the
+`DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` Actions secrets, and the version pull request needs
+Settings, Actions, General, "Allow GitHub Actions to create and approve pull requests".
 
 ## Ports
 

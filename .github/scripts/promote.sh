@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
-# Move `latest` onto this commit's image, after its tests have passed.
+# Move `latest` onto this commit's image after its tests have passed, and on a release run publish
+# the exact version and move the release line too.
 #
-#     IMAGE=maroonedsoftware/curator promote.sh
+#     IMAGE=maroonedsoftware/curator VERSION=0.1.0 LINE=0.1 promote.sh
 #
-# The image was pushed as IMAGE:<sha> by images.yml. The move is a registry-side retag
+# The image was pushed as IMAGE:<sha> by images.yml. Every move is a registry-side retag
 # (`imagetools create`), so nothing is pulled, rebuilt or pushed.
 #
-# Reads IMAGE, GITHUB_REF, GITHUB_SHA, GITHUB_REPOSITORY and RUNNER_TEMP from the runner, and
-# GH_TOKEN for the compare API.
+# Reads IMAGE, GITHUB_REF, GITHUB_SHA, GITHUB_REPOSITORY and RUNNER_TEMP from the runner, GH_TOKEN for
+# the compare API, and VERSION and LINE, either of which may be empty.
 
 set -euo pipefail
 
 : "${IMAGE:?IMAGE is the repository to retag in}"
+VERSION="${VERSION:-}"
+LINE="${LINE:-}"
 
 # Never BACKWARDS. A run can get here for a commit older than the one the tag already names, when its
 # push arrived late and a newer commit's run promoted first; moving the tag then would roll back
@@ -56,4 +59,16 @@ if [ "${GITHUB_REF}" = refs/heads/main ]; then
     move latest "${GITHUB_SHA}"
 else
     echo "::notice::Not main, so latest stays where it is."
+fi
+
+# The exact version (`0.1.0`) on a release run. Here, after the tests, rather than in images.yml: a
+# release whose tests fail cuts no git tag and is retried by the next push at the same version, so a
+# version tag pushed before the tests could name an image that never passed them.
+if [ -n "$VERSION" ]; then
+    docker buildx imagetools create --tag "${IMAGE}:${VERSION}" "${IMAGE}:${GITHUB_SHA}"
+fi
+
+# The release line (`0.1`), the tag to pin to follow releases without pinning one.
+if [ -n "$LINE" ]; then
+    docker buildx imagetools create --tag "${IMAGE}:${LINE}" "${IMAGE}:${GITHUB_SHA}"
 fi
