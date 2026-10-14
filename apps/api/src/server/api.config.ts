@@ -9,7 +9,7 @@ const port = (fallback: number) =>
         z.coerce.number().int().min(0).max(65535),
     );
 
-/** The resolver JSON-parses what it substitutes, so a password of `1234` arrives as a number. */
+/** `${env:NAME}` fills in text, but a config built in code (the tests) may still hand a number. */
 const text = z.coerce.string();
 
 const ApiConfigSchema = z.object({
