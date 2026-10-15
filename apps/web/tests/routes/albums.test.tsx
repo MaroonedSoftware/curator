@@ -33,6 +33,8 @@ function fakeAlbums(albums = [album(HALLOWEEN, 'Halloween', ['MY-F0001', 'MY-F00
     const requests = fakeApi({
         ...withTv(),
         [`GET ${TV_BASE}/rotation`]: () => noContent(),
+        [`GET ${TV_BASE}/art`]: () =>
+            jsonResponse({ items: [{ contentId: 'MY_F0001', categoryId: 'MY-C0002', categoryIds: ['MY-C0002'], raw: {} }] }),
         [`GET ${TV_BASE}/albums`]: () => jsonResponse({ items: [...state.albums].sort((a, b) => a.name.localeCompare(b.name)).map(summary) }),
         [`POST ${TV_BASE}/albums`]: request => {
             const { name } = request.body as { name: string };
@@ -70,7 +72,7 @@ describe('albums', () => {
         expect(within(cards[0]!).getByText('0 pieces')).toBeInTheDocument();
     });
 
-    it('shows a collage of the album’s preview pieces, or a placeholder when empty', async () => {
+    it('shows a collage of the album’s preview pieces, as the TV spells their ids, or a placeholder when empty', async () => {
         fakeAlbums();
 
         renderApp(`${TV_BASE}/albums`);
@@ -78,10 +80,12 @@ describe('albums', () => {
         const [christmas, halloween] = await screen.findAllByTestId('album-card');
         expect(within(christmas!).getByRole('img', { name: 'No pieces in Christmas' })).toBeInTheDocument();
         const collage = within(halloween!).getByRole('img', { name: 'Pieces from Halloween' });
-        expect([...collage.querySelectorAll('img')].map(img => img.getAttribute('src'))).toEqual([
-            `/api${TV_BASE}/art/MY-F0001/thumbnail`,
-            `/api${TV_BASE}/art/MY-F0002/thumbnail`,
-        ]);
+        await waitFor(() =>
+            expect([...collage.querySelectorAll('img')].map(img => img.getAttribute('src'))).toEqual([
+                `/api${TV_BASE}/art/MY_F0001/thumbnail`,
+                `/api${TV_BASE}/art/MY-F0002/thumbnail`,
+            ]),
+        );
     });
 
     it('says how to start when there are none', async () => {
