@@ -2,13 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { errorResponse, fakeApi, jsonResponse, noContent, TV_BASE, withTv } from '../fake.api';
 import { renderApp, screen, setupUser, waitFor, within } from '../test.render';
 
-type Album = { id: string; name: string; pieceCount: number; coverContentId?: string; createdAt: string; updatedAt: string };
+type Album = {
+    id: string;
+    name: string;
+    pieceCount: number;
+    coverContentId?: string;
+    previewContentIds: string[];
+    createdAt: string;
+    updatedAt: string;
+};
 
 const album = (id: string, name: string, contentIds: string[] = []): Album & { contentIds: string[] } => ({
     id,
     name,
     pieceCount: contentIds.length,
     coverContentId: contentIds[0],
+    previewContentIds: contentIds.slice(0, 4),
     createdAt: '2026-10-12T10:00:00.000Z',
     updatedAt: '2026-10-12T10:00:00.000Z',
     contentIds,
@@ -59,6 +68,20 @@ describe('albums', () => {
         expect(cards.map(card => within(card).getByText(/Halloween|Christmas/).textContent)).toEqual(['Christmas', 'Halloween']);
         expect(within(cards[1]!).getByText('2 pieces')).toBeInTheDocument();
         expect(within(cards[0]!).getByText('0 pieces')).toBeInTheDocument();
+    });
+
+    it('shows a collage of the album’s preview pieces, or a placeholder when empty', async () => {
+        fakeAlbums();
+
+        renderApp(`${TV_BASE}/albums`);
+
+        const [christmas, halloween] = await screen.findAllByTestId('album-card');
+        expect(within(christmas!).getByRole('img', { name: 'No pieces in Christmas' })).toBeInTheDocument();
+        const collage = within(halloween!).getByRole('img', { name: 'Pieces from Halloween' });
+        expect([...collage.querySelectorAll('img')].map(img => img.getAttribute('src'))).toEqual([
+            `/api${TV_BASE}/art/MY-F0001/thumbnail`,
+            `/api${TV_BASE}/art/MY-F0002/thumbnail`,
+        ]);
     });
 
     it('says how to start when there are none', async () => {

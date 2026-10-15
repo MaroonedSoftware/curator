@@ -3,15 +3,20 @@ import { sql, type Kysely, type Selectable } from 'kysely';
 import type { Albums, DB } from '../data/db.js';
 import { normalizeContentId } from '../frame/content.id.js';
 
-/** A row of `albums`, with how many pieces it holds and the first of them. */
+/** A row of `albums`, with how many pieces it holds, the first of them, and a few to preview. */
 export type AlbumRow = Selectable<Albums> & {
     pieceCount: number;
     /** The album's first piece, to show as its cover. Absent for an empty album. */
     coverContentId?: string;
+    /** Up to four of the album's pieces, picked at random on each read, to show as a collage. */
+    previewContentIds: string[];
 };
 
 /** Postgres's unique_violation: here, an album name already used on that TV. */
 const isUniqueViolation = (error: unknown) => typeof error === 'object' && error !== null && (error as { code?: unknown }).code === '23505';
+
+/** How many pieces an album's collage shows. */
+const PREVIEW_SIZE = 4;
 
 const notFound = (id: string) => httpError(404).withDetails({ reason: `no album with id ${id}` });
 const nameTaken = (name: string) => httpError(409).withDetails({ reason: `there is already an album called ${name}` });
@@ -40,6 +45,12 @@ export class AlbumRepository {
                     .orderBy('position')
                     .limit(1)
                     .as('coverContentId'),
+                sql<string[]>`array(${eb
+                    .selectFrom('albumPieces')
+                    .whereRef('albumPieces.albumId', '=', 'albums.id')
+                    .select('contentId')
+                    .orderBy(sql`random()`)
+                    .limit(PREVIEW_SIZE)})`.as('previewContentIds'),
             ])
             .where('albums.tvId', '=', tvId);
     }
@@ -163,9 +174,11 @@ export class AlbumRepository {
 const toAlbumRow = ({
     pieceCount,
     coverContentId,
+    previewContentIds,
     ...album
-}: Selectable<Albums> & { pieceCount: number | null; coverContentId: string | null }): AlbumRow => ({
+}: Selectable<Albums> & { pieceCount: number | null; coverContentId: string | null; previewContentIds: string[] }): AlbumRow => ({
     ...album,
     pieceCount: pieceCount ?? 0,
     coverContentId: coverContentId ?? undefined,
+    previewContentIds,
 });

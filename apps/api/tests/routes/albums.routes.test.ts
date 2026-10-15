@@ -29,6 +29,7 @@ describe('albums', () => {
             id: expect.any(String),
             name: 'Halloween',
             pieceCount: 0,
+            previewContentIds: [],
             createdAt: expect.any(String),
             updatedAt: expect.any(String),
         });

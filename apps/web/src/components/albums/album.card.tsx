@@ -3,7 +3,7 @@ import { IconDots, IconPencil, IconRotate, IconTrash } from '@tabler/icons-react
 import { Link, useNavigate } from '@tanstack/react-router';
 import { tvApi, type Album } from '../../api/api.client';
 import { useTv } from '../../tvs/tv.context';
-import { ArtThumbnail } from '../library/art.thumbnail';
+import { AlbumCollage } from './album.collage';
 
 interface AlbumCardProps {
     album: Album;
@@ -25,8 +25,8 @@ export function AlbumCard({ album, rotating, onRotate, onRename, onDelete }: Alb
     return (
         <Card withBorder padding="xs" data-testid="album-card">
             <Card.Section>
-                <ArtThumbnail
-                    src={album.coverContentId && tvApi(tv.id).thumbnailUrl(album.coverContentId)}
+                <AlbumCollage
+                    srcs={album.previewContentIds.map(tvApi(tv.id).thumbnailUrl)}
                     alt={album.name}
                     onOpen={() => void navigate({ to: href })}
                 />

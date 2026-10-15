@@ -14,6 +14,8 @@ export const Album = z.object({
     pieceCount: z.number().int(),
     /** The album's first piece, to show as its cover. Absent for an empty album. */
     coverContentId: z.string().optional(),
+    /** Up to four of the album's pieces, picked at random on each read, to show as a collage. */
+    previewContentIds: z.array(z.string()),
     createdAt: z.string(),
     updatedAt: z.string(),
 });
@@ -25,6 +27,7 @@ export const toAlbum = (row: AlbumRow): Album => ({
     name: row.name,
     pieceCount: row.pieceCount,
     coverContentId: row.coverContentId,
+    previewContentIds: row.previewContentIds,
     createdAt: row.createdAt.toISO() ?? '',
     updatedAt: row.updatedAt.toISO() ?? '',
 });
