@@ -208,8 +208,9 @@ jobs:
             pull-requests: write
         steps:
             # The whole history: `changeset version` looks up the commit that added each changeset for
-            # its changelog, and on a shallow clone it fetches more itself, which fails because the
-            # token is not in git's config yet (the repo is private).
+            # its changelog, and on a shallow clone it fetches more itself. That fetch runs before the
+            # token reaches git, so it only works while the repo is public (it failed while this one was
+            # private). With the history already here there is nothing to fetch.
             - name: Checkout
               uses: actions/checkout@v7
               with:
