@@ -79,6 +79,8 @@ export interface Album {
     pieceCount: number;
     /** The album's first piece. Absent for an empty album. */
     coverContentId?: string;
+    /** Up to four of the album's pieces, picked at random on each read, to show as a collage. */
+    previewContentIds: string[];
     createdAt: string;
     updatedAt: string;
 }

@@ -28,6 +28,7 @@ describe('AlbumRepository', () => {
 
         expect(album).toMatchObject({ tvId, name: 'Halloween', pieceCount: 0, id: expect.any(String) });
         expect(album.coverContentId).toBeUndefined();
+        expect(album.previewContentIds).toEqual([]);
         expect(album.createdAt.isValid).toBe(true);
     });
 
@@ -71,6 +72,20 @@ describe('AlbumRepository', () => {
 
         expect(await albums.pieces(tvId, album.id)).toEqual(['MY-F0002', 'MY-F0001', 'SAM-S0003']);
         expect(await albums.get(tvId, album.id)).toMatchObject({ pieceCount: 3, coverContentId: 'MY-F0002' });
+    });
+
+    it('previews up to four of the album’s pieces', async () => {
+        const album = await albums.create(tvId, 'Halloween');
+        const ids = ['MY-F0001', 'MY-F0002', 'MY-F0003', 'MY-F0004', 'MY-F0005', 'MY-F0006'];
+
+        await albums.addPieces(tvId, album.id, ids.slice(0, 2));
+        expect((await albums.get(tvId, album.id)).previewContentIds.sort()).toEqual(ids.slice(0, 2));
+
+        await albums.addPieces(tvId, album.id, ids.slice(2));
+        const { previewContentIds } = await albums.get(tvId, album.id);
+        expect(previewContentIds).toHaveLength(4);
+        expect(new Set(previewContentIds).size).toBe(4);
+        expect(ids).toEqual(expect.arrayContaining(previewContentIds));
     });
 
     it('lets a piece be in more than one album', async () => {

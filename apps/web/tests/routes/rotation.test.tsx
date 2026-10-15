@@ -10,6 +10,7 @@ const albumSummary = (id: string, name: string) => ({
     name,
     pieceCount: 2,
     coverContentId: 'MY-F0001',
+    previewContentIds: ['MY-F0001', 'MY-F0002'],
     createdAt: '2026-10-12T10:00:00.000Z',
     updatedAt: '2026-10-12T10:00:00.000Z',
 });
