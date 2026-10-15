@@ -1,7 +1,9 @@
 import { ActionIcon, Anchor, Badge, Card, Group, Menu, Stack, Text } from '@mantine/core';
 import { IconDots, IconPencil, IconRotate, IconTrash } from '@tabler/icons-react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { tvApi, type Album } from '../../api/api.client';
+import { normalizeContentId, tvApi, type Album } from '../../api/api.client';
+import { artListOptions } from '../../api/tv.queries';
 import { useTv } from '../../tvs/tv.context';
 import { AlbumCollage } from './album.collage';
 
@@ -21,12 +23,15 @@ export function AlbumCard({ album, rotating, onRotate, onRename, onDelete }: Alb
     const tv = useTv();
     const navigate = useNavigate();
     const href = `/tvs/${tv.id}/albums/${album.id}`;
+    const art = useQuery(artListOptions(tv.id));
+    // Albums keep MY-F0001 where newer firmware lists MY_F0001, and the TV only finds a thumbnail by its own spelling.
+    const onTv = new Map((art.data ?? []).map(item => [normalizeContentId(item.contentId), item.contentId]));
 
     return (
         <Card withBorder padding="xs" data-testid="album-card">
             <Card.Section>
                 <AlbumCollage
-                    srcs={album.previewContentIds.map(tvApi(tv.id).thumbnailUrl)}
+                    srcs={album.previewContentIds.map(id => tvApi(tv.id).thumbnailUrl(onTv.get(id) ?? id))}
                     alt={album.name}
                     onOpen={() => void navigate({ to: href })}
                 />
