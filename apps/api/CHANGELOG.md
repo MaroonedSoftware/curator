@@ -1,5 +1,11 @@
 # @curator/api
 
+## 0.2.1
+
+### Patch Changes
+
+- @curator/frame@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
