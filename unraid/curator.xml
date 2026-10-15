@@ -30,8 +30,9 @@
     </Overview>
     <Category>MediaApp:Photos Tools:</Category>
     <Requires>
-        A PostgreSQL database that already exists (17 is what curator is tested on; no extensions
-        needed). An x86-64 server: there is no arm64 image.
+        A PostgreSQL server (17 is what curator is tested on; no extensions needed). Curator creates
+        its database there on first start, given a user allowed to create databases. An x86-64 server:
+        there is no arm64 image.
     </Requires>
     <WebUI>http://[IP]:[PORT:14100]/</WebUI>
     <Icon>https://raw.githubusercontent.com/MaroonedSoftware/curator/main/apps/web/public/frame.svg</Icon>
@@ -56,11 +57,11 @@
         Description="" Type="Variable" Display="always" Required="false" Mask="false">5432</Config>
 
     <Config Name="Database name" Target="DATABASE_NAME" Default="curator" Mode=""
-        Description="Must already exist (CREATE DATABASE curator, or POSTGRES_DB=curator on the official image). Curator creates its tables inside it at start, not the database itself."
+        Description="Created at first start if it does not exist, which needs a user allowed to create databases (the postgres superuser is). With a user that is not, create it first (CREATE DATABASE curator OWNER that_user). Its tables are created and updated at every start."
         Type="Variable" Display="always" Required="true" Mask="false">curator</Config>
 
     <Config Name="Database user" Target="DATABASE_USER" Default="" Mode=""
-        Description="Owns the database: the schema is applied as this user at every start, so it needs to create tables."
+        Description="Applies the schema at every start, so it needs to create tables in the database, and to create the database itself if it does not exist yet."
         Type="Variable" Display="always" Required="true" Mask="false"></Config>
 
     <Config Name="Database password" Target="DATABASE_PASSWORD" Default="" Mode=""
