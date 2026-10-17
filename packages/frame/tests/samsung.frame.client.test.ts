@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
     Category,
@@ -170,6 +171,23 @@ describe('edge cases', () => {
     it('reports an unaccepted pairing prompt', async () => {
         await setup({ rejectPairing: true });
         await expect(client.current()).rejects.toBeInstanceOf(FrameUnauthorizedError);
+    });
+
+    it('logs the TV hanging up with a 1005 close at debug, outside the trace that opened the channel', async () => {
+        const trace = new AsyncLocalStorage<string>();
+        const lines: { level: string; msg: string; trace?: string }[] = [];
+        const record = (level: string) => (msg: string) => lines.push({ level, msg, trace: trace.getStore() });
+        await setup({}, { logger: { debug: record('debug'), info: record('info'), warn: record('warn') } });
+        await trace.run('opener', () => client.current());
+
+        lines.length = 0;
+        tv.hangUp();
+        await expect.poll(() => lines.some(line => line.msg.startsWith('art channel closed'))).toBe(true);
+
+        expect(lines.filter(line => line.level === 'warn')).toEqual([]);
+        expect(lines).toContainEqual({ level: 'debug', msg: 'art channel: the TV hung up', trace: undefined });
+        expect(lines.every(line => line.trace === undefined)).toBe(true);
+        expect((await client.current()).content_id).toBe('SAM-S0001');
     });
 
     it('reconnects after a required request times out on a dead socket', async () => {

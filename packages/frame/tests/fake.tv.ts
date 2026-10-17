@@ -96,6 +96,14 @@ export class FakeTv {
         for (const ws of this.artSockets) ws.terminate();
     }
 
+    /**
+     * Closes the art channel the way a real TV does: with a close frame carrying 1005, a code
+     * `ws` will not send itself, so the frame is written to the socket raw.
+     */
+    hangUp() {
+        for (const ws of this.artSockets) (ws as unknown as { _socket: net.Socket })._socket.write(Buffer.from([0x88, 0x02, 0x03, 0xed]));
+    }
+
     /** Simulates a socket that died without closing: open, but nothing gets an answer. */
     freezeConnections() {
         for (const ws of this.artSockets) this.frozenSockets.add(ws);
