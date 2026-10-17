@@ -1,5 +1,11 @@
 # @curator/web
 
+## 0.2.3
+
+### Patch Changes
+
+- a1a80f3: A new app icon: a framed, matted landscape print (rolling teal hills under an orange sunset sky) in place of the simple picture icon
+
 ## 0.2.2
 
 ### Patch Changes
