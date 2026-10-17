@@ -1,5 +1,12 @@
 # @curator/api
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [40f627c]
+    - @curator/frame@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes
