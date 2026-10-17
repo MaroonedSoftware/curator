@@ -1,5 +1,11 @@
 # @curator/web
 
+## 0.2.2
+
+### Patch Changes
+
+- 1d58673: Recolor the app icon in bolder sunset colors, with a light frame in dark mode
+
 ## 0.2.1
 
 ### Patch Changes
