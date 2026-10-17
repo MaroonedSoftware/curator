@@ -1,6 +1,6 @@
 # curator
 
-pnpm + turbo workspace. Deployables live in `apps/` (`@curator/api` on ServerKit Fastify, `@curator/web` on Vite + React + Mantine); libraries in `packages/`; shared config in `packages/config-*` (`@repo/*`).
+pnpm + turbo workspace. Deployables live in `apps/` (`@curator/api` on ServerKit Fastify, `@curator/web` on Vite + React + Mantine, and `@curator/site`, the public website on Docusaurus, which has its own `CLAUDE.md`); libraries in `packages/`; shared config in `packages/config-*` (`@repo/*`).
 
 ## Rules that apply everywhere
 
