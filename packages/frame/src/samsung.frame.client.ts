@@ -17,6 +17,7 @@
  *      raw TCP (or TLS) socket to it and write [u32 BE header length][header JSON][bytes].
  *      The TV then emits "image_added" with the new content_id.
  */
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { EventEmitter } from 'node:events';
 import { randomInt, randomUUID } from 'node:crypto';
 import http from 'node:http';
@@ -35,6 +36,21 @@ import { decodeHtmlEntities } from './html.entities.js';
 const ART_ENDPOINT = 'com.samsung.art-app';
 const REMOTE_ENDPOINT = 'samsung.remote.control';
 const IGNORE_AT_STARTUP = new Set(['ed.edenTV.update', 'ms.voiceApp.hide']);
+
+/**
+ * Runs a callback outside whatever async context (a caller's request trace, say) was current when the
+ * art channel opened. Taken at module load, before any caller's context exists. A socket's events
+ * otherwise run in the context of the call that created it, so everything the channel did for its
+ * whole life would be filed under that first caller.
+ */
+const detached = AsyncLocalStorage.snapshot();
+
+/**
+ * Samsung TVs end a channel with a close frame carrying 1005 ("no status"), a code the spec reserves
+ * for local use only. `ws` rejects that frame as an error and then closes the socket, so it is the
+ * TV hanging up, not a fault.
+ */
+const isTvHangUp = (err: Error) => (err as { code?: string }).code === 'WS_ERR_INVALID_CLOSE_CODE' && err.message.endsWith(' 1005');
 
 export interface Logger {
     debug(msg: string, ...args: unknown[]): void;
@@ -390,14 +406,17 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
                 let token = await this.tokenStore.load();
                 if (!token) token = await this.pair();
                 const ws = await this.openChannel(ART_ENDPOINT, token, this.opts.connectTimeoutMs, true);
-                ws.on('message', raw => this.onMessage(raw.toString()));
-                ws.on('close', () => {
-                    // A socket that was already replaced (it lingered in CLOSING while a new
-                    // one opened) must not fail requests waiting on its successor.
-                    if (this.ws !== ws) return;
-                    this.ws = undefined;
-                    this.failWaiters(new FrameConnectionError('art channel closed'));
-                });
+                ws.on('message', raw => detached(() => this.onMessage(raw.toString())));
+                ws.on('close', (code: number) =>
+                    detached(() => {
+                        // A socket that was already replaced (it lingered in CLOSING while a new
+                        // one opened) must not fail requests waiting on its successor.
+                        if (this.ws !== ws) return;
+                        this.log.debug('art channel closed (%d)', code);
+                        this.ws = undefined;
+                        this.failWaiters(new FrameConnectionError('art channel closed'));
+                    }),
+                );
                 this.ws = ws;
                 return ws;
             } finally {
@@ -471,7 +490,12 @@ export class SamsungFrameClient extends EventEmitter implements FrameClient {
                         clearTimeout(timer);
                         ws.removeAllListeners('close');
                         ws.removeAllListeners('error');
-                        ws.on('error', err => this.log.warn('art channel error: %s', err.message));
+                        ws.on('error', err =>
+                            detached(() => {
+                                if (isTvHangUp(err)) this.log.debug('art channel: the TV hung up');
+                                else this.log.warn('art channel error: %s', err.message);
+                            }),
+                        );
                         resolve(ws);
                     },
                     err => fail(new FrameError('could not save the pairing token', { cause: err })),
