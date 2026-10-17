@@ -19,3 +19,8 @@
 # rebuild it.
 apps/*/tests
 packages/*/tests
+
+# The site is not part of the image. Its manifest stays because the frozen lockfile names it as a
+# workspace member, and nothing else does, so editing a page does not invalidate the source layer.
+apps/site/*
+!apps/site/package.json

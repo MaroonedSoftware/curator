@@ -1,0 +1,9 @@
+# Docusaurus's generated route and config modules, rewritten on every start and build.
+.docusaurus/
+
+# Copies of pages written elsewhere in the repository. scripts/docs.sync.mjs writes them on every
+# start and build, from the sources its list names.
+docs/develop/index.md
+docs/develop/api.md
+docs/develop/web.md
+docs/develop/frame.md

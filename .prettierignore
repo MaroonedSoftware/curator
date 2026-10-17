@@ -7,3 +7,7 @@ pnpm-lock.yaml
 
 # kysely-codegen output
 apps/api/src/modules/data/kysely.ts
+
+# Docusaurus's generated modules, and the site's copies of pages written elsewhere.
+**/.docusaurus/
+apps/site/docs/develop/

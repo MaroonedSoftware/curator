@@ -1,0 +1,103 @@
+.demo {
+    margin: 0;
+    min-width: 0;
+}
+
+/* The Frame: a thin dark bezel, as the TV is built, around a 16:9 picture. */
+.tv {
+    aspect-ratio: 16 / 9;
+    background: var(--cu-ink);
+    padding: 2.4%;
+    border-radius: 4px;
+    box-shadow:
+        0 1px 2px rgb(0 0 0 / 12%),
+        0 18px 40px -12px rgb(0 0 0 / 35%);
+}
+
+.matte {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    transition:
+        padding 220ms ease,
+        background-color 220ms ease;
+}
+
+.art {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* A shadowbox's inner bevel, as a shadow over the picture's edge. */
+.shadowbox {
+    box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 10%),
+        0 0 0 3px rgb(255 255 255 / 35%),
+        2px 3px 8px rgb(0 0 0 / 30%);
+}
+
+.controls {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+.group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.chip {
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid var(--cu-border-strong);
+    background: var(--cu-surface);
+    color: var(--cu-text-secondary);
+    cursor: pointer;
+}
+
+.chip[aria-checked='true'] {
+    border-color: var(--cu-accent-fill);
+    background: var(--cu-accent-fill);
+    color: var(--cu-on-accent);
+}
+
+.swatch {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: 1px solid var(--cu-border-strong);
+    cursor: pointer;
+}
+
+.swatch[aria-checked='true'] {
+    outline: 2px solid var(--ifm-color-primary);
+    outline-offset: 2px;
+}
+
+.swatch:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.chip:focus-visible,
+.swatch:focus-visible {
+    outline: 2px solid var(--ifm-color-primary);
+    outline-offset: 2px;
+}
+
+.caption {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--cu-text-dimmed);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .matte {
+        transition: none;
+    }
+}

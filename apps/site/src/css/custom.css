@@ -1,0 +1,124 @@
+/*
+ * The site in the web app's colours: Mantine's teal, which `apps/web/src/theme.ts` makes the primary
+ * colour, and the ink, paper, sage and gold of `apps/web/public/frame.svg`. Copied rather than
+ * imported, because the web app publishes them through Mantine and this site does not load it. If
+ * either moves, move these with it.
+ *
+ * The accent is teal 9 in the light scheme rather than the app's teal 6: white on teal 6 is 2.6:1,
+ * and on teal 9 it is 5.0:1. Both schemes, following the operating system as the app does. Infima
+ * states its dark palette on `[data-theme='dark']`, so the dark block has to name that selector to win.
+ */
+
+:root {
+    --cu-ink: #2b2a28;
+    --cu-paper: #f4efe6;
+    --cu-sage: #7a8f6b;
+    --cu-gold: #d9a441;
+
+    --cu-bg: #faf8f4;
+    --cu-surface: #ffffff;
+    --cu-raised: #f1ede5;
+    --cu-border: #e6e1d7;
+    --cu-border-strong: #d2ccbf;
+    --cu-text: #1f1e1c;
+    --cu-text-secondary: #4b4944;
+    --cu-text-dimmed: #6f6c65;
+    --cu-accent: #087f5b;
+    --cu-accent-soft: rgb(8 127 91 / 8%);
+    --cu-accent-fill: #087f5b;
+    --cu-accent-fill-hover: #076d4e;
+    --cu-on-accent: #ffffff;
+
+    /* Mantine's teal, anchored at index 9. */
+    --ifm-color-primary: #087f5b;
+    --ifm-color-primary-dark: #077251;
+    --ifm-color-primary-darker: #066c4d;
+    --ifm-color-primary-darkest: #05593f;
+    --ifm-color-primary-light: #099268;
+    --ifm-color-primary-lighter: #0ca678;
+    --ifm-color-primary-lightest: #12b886;
+
+    --ifm-background-color: var(--cu-bg);
+    --ifm-background-surface-color: var(--cu-surface);
+    --ifm-font-color-base: var(--cu-text);
+    --ifm-font-color-secondary: var(--cu-text-secondary);
+    --ifm-heading-color: var(--cu-text);
+    --ifm-link-color: var(--cu-accent);
+    --ifm-hr-background-color: var(--cu-border);
+    --ifm-toc-border-color: var(--cu-border);
+    --ifm-table-border-color: var(--cu-border-strong);
+    --ifm-table-stripe-background: var(--cu-raised);
+    --ifm-code-background: var(--cu-raised);
+    --ifm-menu-color-background-active: var(--cu-accent-soft);
+    --ifm-menu-color-background-hover: var(--cu-raised);
+    --ifm-navbar-background-color: var(--cu-surface);
+
+    --ifm-font-family-base: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --ifm-font-family-monospace: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    --ifm-heading-font-weight: 650;
+    --ifm-code-font-size: 88%;
+
+    --ifm-global-radius: 8px;
+    --ifm-navbar-shadow: none;
+    --docusaurus-highlighted-code-line-bg: rgb(8 127 91 / 12%);
+}
+
+html[data-theme='dark'] {
+    --cu-bg: #151514;
+    --cu-surface: #1b1b1a;
+    --cu-raised: #242422;
+    --cu-border: #2e2e2b;
+    --cu-border-strong: #3d3d39;
+    --cu-text: #ecebe7;
+    --cu-text-secondary: #b6b4ad;
+    --cu-text-dimmed: #8b8982;
+    /* Teal 4 as text: 10.1:1 on the dark background. */
+    --cu-accent: #38d9a9;
+    --cu-accent-soft: rgb(56 217 169 / 12%);
+    /* Teal 4 as a fill carries dark text rather than white, which it holds at only 1.8:1. */
+    --cu-accent-fill: #38d9a9;
+    --cu-accent-fill-hover: #63e6be;
+    --cu-on-accent: #0b1f19;
+
+    /* Mantine's teal, anchored at index 4. */
+    --ifm-color-primary: #38d9a9;
+    --ifm-color-primary-dark: #20c997;
+    --ifm-color-primary-darker: #12b886;
+    --ifm-color-primary-darkest: #0ca678;
+    --ifm-color-primary-light: #63e6be;
+    --ifm-color-primary-lighter: #96f2d7;
+    --ifm-color-primary-lightest: #c3fae8;
+
+    --ifm-background-color: var(--cu-bg);
+    --ifm-background-surface-color: var(--cu-surface);
+    --ifm-font-color-base: var(--cu-text);
+    --ifm-font-color-secondary: var(--cu-text-secondary);
+    --ifm-heading-color: var(--cu-text);
+    --ifm-link-color: var(--cu-accent);
+    --ifm-hr-background-color: var(--cu-border);
+    --ifm-toc-border-color: var(--cu-border);
+    --ifm-table-border-color: var(--cu-border-strong);
+    --ifm-table-stripe-background: var(--cu-raised);
+    --ifm-code-background: var(--cu-raised);
+    --ifm-menu-color-background-active: var(--cu-accent-soft);
+    --ifm-menu-color-background-hover: var(--cu-raised);
+    --ifm-navbar-background-color: var(--cu-surface);
+    --docusaurus-highlighted-code-line-bg: rgb(56 217 169 / 16%);
+}
+
+.navbar {
+    border-bottom: 1px solid var(--cu-border);
+}
+
+.navbar__title {
+    font-weight: 650;
+    letter-spacing: -0.01em;
+}
+
+.footer {
+    --ifm-footer-background-color: var(--cu-surface);
+    --ifm-footer-link-color: var(--cu-text-secondary);
+    --ifm-footer-title-color: var(--cu-text);
+    --ifm-footer-color: var(--cu-text-dimmed);
+    border-top: 1px solid var(--cu-border);
+}

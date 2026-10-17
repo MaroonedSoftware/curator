@@ -1,0 +1,228 @@
+/*
+ * The front page, laid out as rhapsode's and deadair's are: left-aligned throughout, on one measure,
+ * so prose never runs past about 70 characters.
+ */
+
+.page {
+    --measure: 40rem;
+    width: 100%;
+    max-width: 76rem;
+    margin: 0 auto;
+    padding: 0 1.25rem 6rem;
+    overflow-x: clip;
+}
+
+.page h2 {
+    font-size: clamp(1.45rem, 1.2rem + 1vw, 1.95rem);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin-bottom: 0.9rem;
+    max-width: var(--measure);
+}
+
+.page h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+}
+
+/* The hero: what it is on the left, a Frame wearing a matte on the right. */
+
+.hero > * {
+    min-width: 0;
+}
+
+.hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 3.5rem;
+    align-items: center;
+    padding: 5rem 0 4.5rem;
+}
+
+.headline {
+    font-size: clamp(2.3rem, 1.5rem + 3.2vw, 4rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+}
+
+.lede {
+    font-size: 1.2rem;
+    line-height: 1.55;
+    color: var(--cu-text-secondary);
+    max-width: 34rem;
+    margin-bottom: 1.75rem;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+}
+
+.primary,
+.secondary {
+    display: inline-block;
+    padding: 0.7rem 1.3rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition:
+        background-color 120ms ease,
+        border-color 120ms ease;
+}
+
+.primary {
+    background: var(--cu-accent-fill);
+    border: 1px solid var(--cu-accent-fill);
+    color: var(--cu-on-accent);
+}
+
+.primary:hover {
+    background: var(--cu-accent-fill-hover);
+    color: var(--cu-on-accent);
+    text-decoration: none;
+}
+
+.secondary {
+    border: 1px solid var(--cu-border-strong);
+    color: var(--cu-text);
+}
+
+.secondary:hover {
+    border-color: var(--ifm-color-primary);
+    color: var(--cu-text);
+    text-decoration: none;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible {
+    outline: 2px solid var(--ifm-color-primary);
+    outline-offset: 2px;
+}
+
+.small {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--cu-text-dimmed);
+    max-width: 32rem;
+    margin: 0;
+}
+
+/* Sections. A split is prose beside the thing it describes. */
+
+.section,
+.split {
+    padding-top: 4.5rem;
+    border-top: 1px solid var(--cu-border);
+    margin-top: 4.5rem;
+}
+
+.hero + .section {
+    margin-top: 0;
+}
+
+.split {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 3rem;
+    align-items: start;
+}
+
+.prose p {
+    line-height: 1.65;
+    color: var(--cu-text-secondary);
+    max-width: var(--measure);
+}
+
+.prose strong {
+    color: var(--cu-text);
+}
+
+.code {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+/* What it does: a list of terms, three to a row. */
+
+.features {
+    margin: 1.5rem 0 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem 3rem;
+}
+
+.feature {
+    padding-top: 1rem;
+    border-top: 3px solid var(--cu-sage);
+}
+
+.feature dt {
+    font-weight: 650;
+    margin-bottom: 0.35rem;
+}
+
+.feature dd {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--cu-text-secondary);
+}
+
+/* Three ways in. */
+
+.routes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2.5rem;
+}
+
+.routes p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--cu-text-secondary);
+}
+
+@media (max-width: 996px) {
+    .hero,
+    .split {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2.5rem;
+    }
+
+    .hero {
+        padding-top: 3rem;
+    }
+
+    .features {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .routes {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.75rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .features {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .section,
+    .split {
+        padding-top: 3rem;
+        margin-top: 3rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .primary,
+    .secondary {
+        transition: none;
+    }
+}

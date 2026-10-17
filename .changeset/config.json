@@ -7,6 +7,6 @@
     "access": "restricted",
     "baseBranch": "main",
     "updateInternalDependencies": "patch",
-    "ignore": ["@repo/config-eslint", "@repo/config-typescript"],
+    "ignore": ["@repo/config-eslint", "@repo/config-typescript", "@curator/site"],
     "privatePackages": { "version": true, "tag": false }
 }
